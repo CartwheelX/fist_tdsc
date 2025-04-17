@@ -62,6 +62,23 @@ python main.py --attack_type 0 --dataset_name cifar10 --attack_name apcmia --arc
 
 ---
 
+---
+
+### 🚨 Attacking DP-Train models
+You need to fist train the target/shadow models with DP-SGD:
+```bash
+python main.py --attack_type 0 --dataset_name location  --train_model --use_DP --noise 0.3 --norm 5 --delta 1e-5
+python main.py --attack_type 0 --dataset_name location  --train_shadow --use_DP --noise 0.3 --norm 5 --delta 1e-5
+```
+Here `--norm` represents the Clipping. Note you can change the DP parameters as per the required Privacy budget 
+
+Attack the DP-SGD trained models
+```bash
+python main.py --attack_type 0 --dataset_name location  --attack_name apcmia
+```
+---
+
+
 ### 📊 Plotting ROC and Threshold Curves
 
 ```bash
