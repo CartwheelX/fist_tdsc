@@ -2,8 +2,6 @@
 
 This repository contains the official implementation of **apcMIA**, a fully differentiable membership inference attack framework designed to operate in black-box settings, especially effective against well-generalized and differentially private (DP-SGD-trained) models.
 
-APCMIA selectively perturbs ambiguous non-member prediction vectors using a contrastive learning framework. It adapts cosine similarity and entropy thresholds based on the target model's generalization gap, achieving state-of-the-art performance under low FPR regimes.
-
 ---
 
 ## 🧠 Requirements
