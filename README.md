@@ -1,8 +1,6 @@
 # apcMIA: Adaptive Perturbation-assisted Contrastive Membership Inference Attack
 
-This repository contains the official implementation of **apcMIA**, a fully differentiable membership inference attack framework designed to operate in black-box settings, especially effective against well-generalized and differentially private (DP-SGD-trained) models.
-
-A PyTorch-based implementation of apcMIA – a contrastive learning-powered black-box membership inference attack effective even against DP-trained models.
+This repository contains the official implementation of PyTorch-based implementation **apcMIA**, a fully differentiable membership inference attack framework designed to operate in black-box settings, especially effective against well-generalized and differentially private (DP-SGD-trained) models.
 
 ---
 
@@ -25,11 +23,11 @@ pip install -r requirements.txt
 ## 📁 Directory Structure
 
 ```
-data/                     # Contains sample datasets (adult, location)
+data/                    # Contains sample datasets (adult, location)
 demoloader/              # Trained target/shadow models and attack artifacts
 results/                 # ROC curves, TPR-FPR, and entropy visualizations
 roc_curves/              # PDF/CSV results for each dataset
-threshold_plots/         # Threshold plots for CNN, MLP, VGG16, WRN
+threshold_plots/         # Threshold plots for CNN, MLP, VGG16
 main.py                  # Entry point to train models and launch attacks
 target_shadow_nn_models.py  # Model architectures and training logic
 meminf.py                # Attack logic for our MIA

@@ -1313,17 +1313,16 @@ def main():
 
     if args.train_model:
         print("Training Target model")
-        
         acc_gap = target_train_func(MODEL_SAVE_PATH, device, target_train, target_test, target_model, batch_size, use_DP, noise, norm, delta, dataset_name, arch)
         exit()
 
     
    
-    if args.attack_type == 0:
-        test_meminf(MODEL_SAVE_PATH, device, num_classes, target_train, target_test, batch_size,  target_model, mode, dataset_name, attack_name, entropy_dis_dr, apcmia_cluster, arch, acc_gap)
+    # if args.attack_type == 0:
+    # Train and Test apcMIA
+    test_meminf(MODEL_SAVE_PATH, device, num_classes, target_train, target_test, batch_size,  target_model, mode, dataset_name, attack_name, entropy_dis_dr, apcmia_cluster, arch, acc_gap)
         
-    else:
-        sys.exit("we have not supported this mode yet! 0c0")
+    
 
 if __name__ == "__main__":
     main()
