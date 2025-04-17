@@ -58,7 +58,7 @@ Run **apcMIA** attack (this command will train our attack and test it):
 ```bash
 python main.py --attack_type 0 --dataset_name cifar10 --attack_name apcmia --arch cnn --apcmia_cluster
 ```
-**Note:** when attacking non-image datasets used to train MLP architecure, carefull provide the the correct arguments. for instance `--arch cnn` and `--arch vgg16` for all image based datasets ( CIFAR10,CIFAR100,STL10 etc.) and `--arch mlp` for datasets (Location, Adult, etc)
+**Note:** if you want to plot the cluster results presented in the paper, you need to use `--apcmia_cluster` flag
 
 **Note:** if you want to plot the cluster results presented in the paper, you need to use `--apcmia_cluster` flag
 ---
