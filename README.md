@@ -41,11 +41,11 @@ meminf.py, my_lira.py    # Attack logic for various MIA baselines
 
 ### 🔧 Train Target and Shadow Models
 
-Example for CIFAR-10 (CNN):
+Example for Location (MLP):
 
 ```bash
-python main.py --attack_type 0 --dataset_name cifar10 --arch cnn --train_model 
-python main.py --attack_type 0 --dataset_name cifar10 --arch cnn --train_shadow
+python main.py --attack_type 0 --dataset_name location --arch mlp --train_model 
+python main.py --attack_type 0 --dataset_name location --arch mlp --train_shadow
 
 ```
 
@@ -56,7 +56,7 @@ python main.py --attack_type 0 --dataset_name cifar10 --arch cnn --train_shadow
 Run **apcMIA** attack (this command will train our attack and test it):
 
 ```bash
-python main.py --attack_type 0 --dataset_name cifar10 --attack_name apcmia --arch cnn --apcmia_cluster
+python main.py --attack_type 0 --dataset_name location --attack_name apcmia --arch mlp --apcmia_cluster
 ```
 **Note:** if you want to plot the cluster results presented in the paper, you need to use `--apcmia_cluster` flag
 
@@ -65,7 +65,7 @@ python main.py --attack_type 0 --dataset_name cifar10 --attack_name apcmia --arc
 ---
 
 ### 🚨 Attacking DP-Train models
-You need to fist train the target/shadow models with DP-SGD:
+Train the target/shadow models with DP-SGD:
 ```bash
 python main.py --attack_type 0 --dataset_name location  --train_model --use_DP --noise 0.3 --norm 5 --delta 1e-5
 python main.py --attack_type 0 --dataset_name location  --train_shadow --use_DP --noise 0.3 --norm 5 --delta 1e-5
@@ -74,7 +74,8 @@ Here `--norm` represents the Clipping. Note you can change the DP parameters as 
 
 Attack the DP-SGD trained models
 ```bash
-python main.py --attack_type 0 --dataset_name location  --attack_name apcmia
+python main.py --attack_type 0 --dataset_name location --attack_name apcmia --arch mlp --apcmia_cluster
+
 ```
 ---
 
@@ -82,8 +83,8 @@ python main.py --attack_type 0 --dataset_name location  --attack_name apcmia
 ### 📊 Plotting ROC and Threshold Curves
 
 ```bash
-python main.py --plot --plot_results roc --dataset_name cifar10
-python main.py --plot --plot_results th --dataset_name cifar10 --attack_name apcmia
+python main.py --plot --plot_results roc --dataset_name location --attack_name apcmia
+python main.py --plot --plot_results th --dataset_name location --attack_name apcmia
 ```
 
 ---
@@ -129,8 +130,8 @@ Check `results/` and `roc_curves/` directories.
 
 ---
 
-## 📄 Citation
+<!-- ## 📄 Citation
 
 If you use this code, please cite our work:
 
-> Khan et al. "Breaking the Shield of Generalization: Adaptive Perturbation-based Contrastive Membership Inference Attacks." ACM CCS 2025 (under review).
+> Khan et al. "Breaking the Shield of Generalization: Adaptive Perturbation-based Contrastive Membership Inference Attacks." ACM CCS 2025 (under review). -->
