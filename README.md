@@ -60,7 +60,6 @@ python main.py --attack_type 0 --dataset_name cifar10 --attack_name apcmia --arc
 ```
 **Note:** if you want to plot the cluster results presented in the paper, you need to use `--apcmia_cluster` flag
 
-**Note:** if you want to plot the cluster results presented in the paper, you need to use `--apcmia_cluster` flag
 ---
 
 ### 📊 Plotting ROC and Threshold Curves
