@@ -53,16 +53,7 @@ python main.py --attack_type 0 --dataset_name cifar10 --arch cnn --train_model
 
 ### 🚨 Run Membership Inference Attacks
 
-Baseline attacks:
-
-```bash
-python main.py --attack_type 0 --dataset_name cifar10 --attack_name mia --arch cnn
-python main.py --attack_type 0 --dataset_name cifar10 --attack_name memia --arch cnn
-python main.py --attack_type 0 --dataset_name cifar10 --attack_name nsh --arch cnn
-python main.py --attack_type 0 --dataset_name cifar10 --attack_name m_lira --lira_train --arch cnn
-```
-
-Run **APCMIA**:
+Run **apcMIA** attack (this command will train our attack and test it):
 
 ```bash
 python main.py --attack_type 0 --dataset_name cifar10 --attack_name apcmia --arch cnn --apcmia_cluster
@@ -93,7 +84,7 @@ You can run all attacks across:
 - `--arch cnn`
 - `--arch mlp`
 - `--arch vgg16`
-- `--arch wrn`
+
 
 Example:
 
