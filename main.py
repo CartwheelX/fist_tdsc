@@ -85,115 +85,6 @@ def target_train_func(PATH, device, train_set, test_set, target_model, batch_siz
 import wandb
 import pytorch_lightning as pl
 
-# train_lira_func(PATH, device, train_ds, test_ds, target_model, batch_size, dataset_name, shadow_id, keep_bool, n_shadows)
-def train_lira_func(PATH, device, train_set, test_set, target_model, batch_size, use_DP, noise, norm, delta, dataset_name, shadow_id, keep_bool, arch):
-    print("Training model: train set shape", len(train_set), " test set shape: ", len(test_set), ", device: ", device)
-    print(f"dataset Name: {dataset_name}")
-    # train_dl = DataLoader(train_ds, batch_size=128, shuffle=True, num_workers=1)
-    # test_dl = DataLoader(test_ds, batch_size=128, shuffle=False, num_workers=1)
-    train_loader = torch.utils.data.DataLoader(train_set, batch_size=batch_size, shuffle=True)
-    test_loader = torch.utils.data.DataLoader(test_set, batch_size=batch_size, shuffle=False)
-
-    model = target_train_class(train_loader, test_loader, dataset_name,  target_model, device, use_DP, noise, norm, delta, arch)
-    
-
-    acc_train = 0
-    acc_test = 0
-    for i in range(60):
-        print("<======================= Epoch " + str(i+1) + " =======================>")
-        print("target training")
-        acc_train = model.train()
-        # print("target testing")
-        # acc_test = model.test()
-        # overfitting = round(acc_train - acc_test, 6)
-        # print('The overfitting rate is %s' % overfitting)
-    # FILE_PATH_target = PATH + "_target.pth"
-    
-    acc_test = model.test()
-    overfitting = round(acc_train - acc_test, 6)
-    print('The overfitting rate is %s' % overfitting)
-
-    print("Saved target model!!!")
-   
-    print("Finished training!!!")
-    # exit()
-    saveDIR = f"exp/{arch}/{dataset_name}" 
-
-    savedir = os.path.join(saveDIR, str(shadow_id))
-    os.makedirs(savedir, exist_ok=True)
-    np.save(savedir + "/keep.npy", keep_bool)
-    # torch.save(m.state_dict(), savedir + "/model.pt")
-    model.saveModel(savedir + "/model.pt")
-    # exit()
-
-    
-    # def run():
-    
-    
-    for shadow_id in range(n_shadows):
-        print(f"Training shadow {shadow_id}")
-        # exit()
-
-        seed = np.random.randint(0, 1000000000)
-        seed ^= int(time.time())
-        pl.seed_everything(seed)
-
-        debug = True
-        wandb.init(project="lira", mode="disabled" if debug else "online")
-        # wandb.config.update(args)
-
-        # train_ds = train_set
-        # test_ds = test_set
-
-        size = len(train_set)
-        np.random.seed(seed)
-        if n_shadows is not None:
-            np.random.seed(0)
-            keep = np.random.uniform(0, 1, size=(n_shadows, size))
-            order = keep.argsort(0)
-            keep = order < int(pkeep * n_shadows)
-            keep = np.array(keep[shadow_id], dtype=bool)
-            keep = keep.nonzero()[0]
-        else:
-            keep = np.random.choice(size, size=int(pkeep * size), replace=False)
-            keep.sort()
-        keep_bool = np.full((size), False)
-        keep_bool[keep] = True
-
-        train_ds = torch.utils.data.Subset(train_set, keep)
-        # train_dl = DataLoader(train_ds, batch_size=128, shuffle=True, num_workers=1)
-        # test_dl = DataLoader(test_ds, batch_size=128, shuffle=False, num_workers=1)
-        # exit()
-        train_lira_func(PATH, device, train_ds, test_set, target_model, batch_size, use_DP, noise, norm, delta, dataset_name, shadow_id, keep_bool, arch)
-
-        
-
-
-def create_subsets(train_dataset, N):
-    """
-    Randomly create N subsets from train_dataset so that
-    each sample appears in exactly N/2 of them.
-
-    Args:
-        train_dataset: A list (or similar) of training samples, e.g. [(x1, y1), (x2, y2), ...]
-        N (int): Number of subsets/models to create. Must be even.
-    Returns:
-        subsets (list of lists): subsets[i] is a list of samples for model i.
-    """
-    assert N % 2 == 0, "N must be even so each sample can appear in N/2 subsets."
-    M = len(train_dataset)
-
-    # Create empty "bins" for each subset
-    subsets = [[] for _ in range(N)]
-
-    for i in range(M):
-        # Randomly pick which N/2 subsets this sample belongs to
-        chosen = random.sample(range(N), k=N//2)
-        for subset_idx in chosen:
-            subsets[subset_idx].append(train_dataset[i])
-
-    return subsets
-
 
 def prepare_attack_data_for_target(train_subset, test_set, mem_ratio=0.45, nonmem_ratio=0.45):
     """
@@ -326,381 +217,8 @@ def generate_confidences_full(PATH ,model, attack_test, device, batch_size=64):
     all_targets = np.concatenate(all_targets, axis=0).reshape(-1, 1)  # reshape to (total_samples, 1)
 
     return all_confidences, all_members, all_targets
+  
 
-def train_multiple_targets_lira(PATH,train_dataset, test_dataset, target_model, device, batch_size,use_DP, noise, norm, delta, dataset_name,N):
-    # heeeer
-    print(f"PATH: {PATH +f"_lira_model_{0}"+ "_target.pth"}")
-
-    # PATH +f"lira_model_{i}"+ "_target.pth"
-
-    combined_signals_path = PATH + "_LiRA_mul.npz"
-    # exit()
-    """
-    Train N different target models for LiRA, each on a random half-subset,
-    ensuring each sample is in exactly N/2 of those subsets.
-
-    Args:
-        train_dataset (list): Full training data, e.g. list of (x, y).
-        test_dataset (list): Full test data, used as the same test set for all models.
-        N (int): Number of target models (must be even).
-        create_model_func (callable): A function that returns a *fresh* untrained model.
-        PATH_prefix (str): Base path for saving each model. We'll append _0, _1, etc.
-        device: Torch device (e.g. "cuda" or "cpu").
-        batch_size, use_DP, noise, norm, delta, dataset_name: Additional config for training.
-    """
-
-    # 1) Create N subsets from the training data
-    subsets = create_subsets(train_dataset, N)
-    print("done partition")
-    # exit()
-    # 2) Train a model on each subset
-
-    all_conf_train = []
-    all_mem_train  = []
-    all_targ_train = []
-
-    for i in range(1):
-        print(f"\n--- Training Model {i+1}/{N} ---")
-        subset_i = subsets[i]
-
-        # Create a fresh untrained model
-        model_i = target_model
-
-        # Provide a unique path for each model
-        # path_i = f"{PATH_prefix}_{i}"
-        path_i = PATH +f"_lira_model_{i}"+ "_target.pth"
-
-        # Now train
-        # i am here
-        acc_train, acc_test, overfitting, trained_model = target_train_func_lira_mul(
-            PATH=path_i,
-            device=device,
-            train_set=subset_i,
-            test_set=test_dataset,
-            target_model=model_i,
-            batch_size=batch_size,
-            use_DP=use_DP,
-            noise=noise,
-            norm=norm,
-            delta=delta,
-            dataset_name=dataset_name
-        )
-
-        print(f"Finished Model {i}, Acc_Train: {acc_train}, Acc_Test: {acc_test}, Overfitting: {overfitting}")
-        
-        # Now, for this target model, prepare the attack data
-        attack_train, attack_test = prepare_attack_data_for_target(subset_i, test_dataset)
-        print(f"Attack train size: {len(attack_train)}, Attack test size: {len(attack_test)}")
-        # ffffffff
-        conf_train, mem_train, targ_train = generate_confidences(path_i, target_model, attack_train, attack_test , device, batch_size)
-        # Print a few samples and their sizes
-        print("Sample confidences:", conf_train[:5])
-        print("Sample memberships:", mem_train[:5])
-        print("Sample targets:", targ_train[:5])
-        print("Size of confidences:", len(conf_train))
-        print("Size of memberships:", len(mem_train))
-        print("Size of targets:", len(targ_train))
-        # Print shapes of the generated confidences, memberships, and targets
-        print("Shape of confidences:", np.array(conf_train).shape)
-        print("Shape of memberships:", np.array(mem_train).shape)
-        print("Shape of targets:", np.array(targ_train).shape)
-        # # Save the attack datasets (for later use when generating confidence outputs)
-        # with open(path_i + "_attack_train.p", "wb") as f:
-        #     pickle.dump(attack_train, f)
-        # with open(path_i + "_attack_test.p", "wb") as f:
-        #     pickle.dump(attack_test, f)
-        # print(f"Saved attack data for target model {i}.")
-
-
-        # Accumulate for combined signals:
-        all_conf_train.extend(conf_train)
-        all_mem_train.extend(mem_train)
-        all_targ_train.extend(targ_train)
-       
-        # exit()
-
-    # exit()
-    # Also train one target model on the full training set:
-    full_path = PATH +"_lira_model_FULL"+ "_target.pth"
-    # train_dataset, 
-    # test_dataset, 
-    # acc_train, acc_test, overfitting, trained_model_full =target_train_func_full(
-    #         PATH=full_path,
-    #         device=device,
-    #         train_set=train_dataset,
-    #         test_set=test_dataset,
-    #         target_model=target_model,
-    #         batch_size=batch_size,
-    #         use_DP=use_DP,
-    #         noise=noise,
-    #         norm=norm,
-    #         delta=delta,
-    #         dataset_name=dataset_name
-    # )
-
-    # full_attack_train, full_attack_test = prepare_attack_data_for_target(train_dataset, test_dataset)
-    # full_conf_test, full_mem_test, full_targ_test = generate_confidences_full(full_path, target_model, full_attack_test, device, batch_size) # only need conf for test samples
-    
-    
-    # print("Size of confidences (full):", len(full_conf_test))
-    # print("Size of memberships (full):", len(full_mem_test))
-    # print("Size of targets (full):", len(full_targ_test))
-    # exit()
-
-
-    full_conf_test = []
-    full_mem_test  = []
-    full_targ_test = []
-    
-
-    # trained_model = target_model
-    print(f"Training Target model on N subsets")
-    path = PATH + f"_lira_model_" + "_target.pth"
-
-    for i in range(1):
-        print(f"\n--- Training on Subset {i+1}/{N} ---")
-        subset_i = subsets[i]
-        
-        # Provide a unique path for saving this iteration's model state (if desired)
-        
-        
-        # Train the model on the current subset
-        acc_train, acc_test, overfitting, trained_model = target_train_func_lira_mul(
-            PATH=path,
-            device=device,
-            train_set=subset_i,
-            test_set=test_dataset,
-            target_model=target_model,  # use the same model (updated iteratively)
-            batch_size=batch_size,
-            use_DP=use_DP,
-            noise=noise,
-            norm=norm,
-            delta=delta,
-            dataset_name=dataset_name
-        )
-        # Update target_model with the newly trained weights
-
-        state_dict = torch.load(path, map_location=device, weights_only=True)
-        target_model.load_state_dict(state_dict)
-        target_model.to(device)
-        target_model.train()
-        
-        # load the trained model from path
-        target_model = target_model
-
-        print(f"Finished subset {i}, Acc_Train: {acc_train}, Acc_Test: {acc_test}, Overfitting: {overfitting}")
-        
-        # Now, for this target model, prepare the attack data
-        attack_train, attack_test = prepare_attack_data_for_target(subset_i, test_dataset)
-        # print(f"Attack train size: {len(attack_train)}, Attack test size: {len(attack_test)}")
-        # ffffffff
-        conf_train, mem_train, targ_train = generate_confidences(path_i, target_model, attack_train, attack_test , device, batch_size)
-        # # Print a few samples and their sizes
-        # print("Sample confidences:", conf_train[:5])
-        # print("Sample memberships:", mem_train[:5])
-        # print("Sample targets:", targ_train[:5])
-        # print("Size of confidences:", len(conf_train))
-        # print("Size of memberships:", len(mem_train))
-        # print("Size of targets:", len(targ_train))
-        # # Print shapes of the generated confidences, memberships, and targets
-        # print("Shape of confidences:", np.array(conf_train).shape)
-        # print("Shape of memberships:", np.array(mem_train).shape)
-        # print("Shape of targets:", np.array(targ_train).shape)
-        # # Save the attack datasets (for later use when generating confidence outputs)
-        # with open(path_i + "_attack_train.p", "wb") as f:
-        #     pickle.dump(attack_train, f)
-        # with open(path_i + "_attack_test.p", "wb") as f:
-        #     pickle.dump(attack_test, f)
-        # print(f"Saved attack data for target model {i}.")
-
-
-        # Accumulate for combined signals:
-        full_conf_test.extend(conf_train)
-        full_mem_test.extend(mem_train)
-        full_targ_test.extend(targ_train)
-
-
-
-    # save_path = PATH + '_lira_results.npz'
-    np.savez(combined_signals_path,
-             all_conf_train=all_conf_train,
-             all_mem_train=all_mem_train,
-             all_targ_train=all_targ_train,
-             full_conf_test=full_conf_test,
-             full_mem_test=full_mem_test,
-             full_targ_test=full_targ_test)
-    # print("Shape of all_conf_train:", np.array(all_conf_train).shape)
-    # print("Shape of all_mem_train:", np.array(all_mem_train).shape)
-    # print("Shape of all_targ_train:", np.array(all_targ_train).shape)
-    # print("Shape of full_conf_test:", np.array(full_conf_test).shape)
-    # print("Shape of full_mem_test:", np.array(full_mem_test).shape)
-    # print("Shape of full_targ_test:", np.array(full_targ_test).shape)
-    # exit()
-    return all_conf_train, all_mem_train, all_targ_train, full_conf_test, full_mem_test, full_targ_test
-
-def attack_lira(all_conf_train, all_mem_train, all_targ_train, full_conf_test, full_mem_test, full_targ_test):
-    # wwwwwwwwww
-
-    from scipy.stats import norm
-
-        # outputs_list = []
-        # members_list = []
-        # targets_list = []
-
-        # # Load data from the saved file (train.p)
-        # with torch.no_grad():
-        #     with open(self.ATTACK_SETS + "train.p", "rb") as f:
-        #         while True:
-        #             try:
-        #                 output, prediction, members, targets = pickle.load(f)
-        #             except EOFError:
-        #                 break
-        #             outputs_list.append(output.cpu())    # output: [batch, num_classes]
-        #             members_list.append(members.cpu())     # membership flag, e.g. 1 for member, 0 for non-member
-        #             targets_list.append(targets.cpu())     # true labels for each sample
-
-        # # Concatenate batches to get one tensor per item.
-        # all_outputs = torch.cat(outputs_list, dim=0)   # shape: (total_samples, num_classes)
-        # all_members = torch.cat(members_list, dim=0)     # shape: (total_samples,)
-        # all_targets = torch.cat(targets_list, dim=0)     # shape: (total_samples,)
-    # print("Type and shape of all_conf_train:", type(all_conf_train), np.array(all_conf_train).shape)
-    # print("Type and shape of all_mem_train:", type(all_mem_train), np.array(all_mem_train).shape)
-    # print("Type and shape of all_targ_train:", type(all_targ_train), np.array(all_targ_train).shape)
-    # print("Type and shape of full_conf_test:", type(full_conf_test), np.array(full_conf_test).shape)
-    # print("Type and shape of full_mem_test:", type(full_mem_test), np.array(full_mem_test).shape)
-    # print("Type and shape of full_targ_test:", type(full_targ_test), np.array(full_targ_test).shape)
-    # exit()
-    # all_conf_train
-    out_signals = all_conf_train     # non-members (out)
-    
-    
-    mean_out = np.median(out_signals, 1).reshape(-1, 1)
-
-    
-    std_out = np.std(out_signals, 1).reshape(-1, 1)
-
-    # print("Estimated distribution parameters:")
-    # # print("Mean In-Signal:", mean_in)
-    # print("Mean Out-Signal:", mean_out[:5])
-    # # print("Std In-Signal:", std_in)
-    # print("Std Out-Signal:", std_out[:5])
-    # exit()
-    # Now, for each sample, compute the negative log-likelihood under the two distributions.
-    # Here, sc (signal observed) is the correct confidence for each sample.
-    
-    # outputs_test_list = []
-    # members_test_list = []
-    # targets_test_list = []
-
-    # # get
-    # # Load data from the saved file (test.p)
-    # with torch.no_grad():
-    #     with open(self.ATTACK_SETS + "test.p", "rb") as f:
-    #         while True:
-    #             try:
-    #                 output, prediction, members, targets = pickle.load(f)
-    #             except EOFError:
-    #                 break
-    #             outputs_test_list.append(output.cpu())    # output: [batch, num_classes]
-    #             members_test_list.append(members.cpu())     # membership flag, e.g. 1 for member, 0 for non-member
-    #             targets_test_list.append(targets.cpu())     # true labels for each sample
-
-    # # Concatenate batches to get one tensor per item.
-    # all_outputs_test = torch.cat(outputs_test_list, dim=0)   # shape: (total_samples, num_classes)
-    # all_members_test = torch.cat(members_test_list, dim=0)     # shape: (total_samples,)
-    # all_targets_test = torch.cat(targets_test_list, dim=0)     # shape: (total_samples,)
-
-    # print("Loaded data from test.p:")
-    # print(f"Outputs shape: {all_outputs_test.shape}")
-    # print(f"Members shape: {all_members_test.shape}")
-    # print(f"Targets shape: {all_targets_test.shape}")
-
-    # exit()
-    # xxxxxxxxxxx
-    # get the ouput confidences for test_dataset of full_target_model and the corresponding members
-
-    # sc = all_outputs_test
-    # full_conf_test, full_mem_test
-    all_outputs_test = full_conf_test
-
-    
-    
-    print("Shape of all_outputs_test:", np.array(all_outputs_test).shape)
-    print("Shape of mean_out:", np.array(mean_out).shape)
-    print("Shape of std_out:", np.array(std_out).shape)
-    # exit()
-    prediction = []
-    answers = []
-
-    
-    pr_in = 0
-    
-    pr_out = -norm.logpdf(all_outputs_test, mean_out, std_out + 1e-30) # gaussian approximation
-    score = pr_in - pr_out
-
-    # print("Score (few samples):", score[:5])
-    # print("Type of score:", type(score))
-    # print("Shape of score:", score.shape)
-    # exit()
-    prediction = np.array(score.mean(1))
-
-    # prediction_2 = np.array(score.mean(1))
-    prediction_2 = np.where(-score.mean(1) >= 0, 1, 0)
-    
-
-    # correct = predicted.eq(all_members_test).sum().item()
-    answers = np.array(full_mem_test.reshape(-1, 1), dtype=bool)
-    fpr_list, tpr_list, betas = roc_curve(answers.ravel(), (-prediction).ravel())
-    # bcm = BinaryConfusionMatrix().to(self.device)
-    # conf_mat = bcm((-prediction).ravel(), all_members_test.ravel())
-    
-
-    
-    acc = np.max(1 - (fpr_list + (1 - tpr_list)) / 2)
-    
-    recall = np.max(tpr_list)
-    print(f"acc: {acc}, recall: {recall:.3f}")
-    
-    
-        
-    # Plot the ROC curve
-    plt.figure(figsize=(8, 6))
-    plt.plot(fpr_list, tpr_list, label="ROC curve (AUC = %0.2f)" % auc(fpr_list, tpr_list), lw=2, color='blue')
-    plt.plot([0, 1], [0, 1], 'k--', lw=2, color='red')
-    plt.xlim([0.0, 1.0])
-    plt.ylim([0.0, 1.05])
-    plt.xlabel("False Positive Rate", fontsize=14)
-    plt.ylabel("True Positive Rate", fontsize=14)
-    plt.title("Receiver Operating Characteristic (ROC) Curve", fontsize=16, fontweight="bold")
-    plt.legend(loc="lower right", fontsize=12)
-    plt.grid(True, linestyle="--", alpha=0.5)
-    plt.tight_layout()
-    plt.show()
-    # print(f"Correct predictions: {correct}")
-    exit()
-    
-
-def target_train_func_lira_mul(PATH, device, train_set, test_set, target_model, batch_size, use_DP, noise, norm, delta, dataset_name):
-    print("Training model: train set shape", len(train_set), "test set shape:", len(test_set), ", device:", device)
-    print(f"Dataset Name: {dataset_name}")
-    train_loader = torch.utils.data.DataLoader(train_set, batch_size=batch_size, shuffle=True)
-    test_loader = torch.utils.data.DataLoader(test_set, batch_size=batch_size, shuffle=True)
-
-    model = target_train_class(train_loader, test_loader, dataset_name, target_model, device, use_DP, noise, norm, delta)
-    
-    for i in range(60):
-        print("<======================= Epoch " + str(i+1) + " =======================>")
-        print("Target training")
-        acc_train = model.train()
-        print("Target testing")
-        acc_test = model.test()
-        overfitting = round(acc_train - acc_test, 6)
-        print("Overfitting rate:", overfitting)
-    
-    FILE_PATH_target = PATH
-    model.saveModel(FILE_PATH_target)
-    print("Saved target model at", FILE_PATH_target)
-    return acc_train, acc_test, overfitting, model
 
 def target_train_func_full(PATH, device, train_set, test_set, target_model, batch_size, use_DP, noise, norm, delta, dataset_name):
     """
@@ -890,10 +408,6 @@ def metric_results_new(fpr_list, tpr_list, attack_name, dataset_name, arch, dire
     print(f"TPR values saved to {path_all}")
 
     # --- Update the master CSV ---
-    # We want columns as follows: 
-    # Method, CIFAR-10_tpr001, STL-10_tpr001, CIFAR-100_tpr001, UTKFace_tpr001, FMNIST_tpr001,
-    #         CIFAR-10_acc, STL-10_acc, CIFAR-100_acc, UTKFace_acc, FMNIST_acc,
-    #         CIFAR-10_auc, STL-10_auc, CIFAR-100_auc, UTKFace_auc, FMNIST_auc
     master_cols = ["Method",
                    "CIFAR-10_tpr001", "STL-10_tpr001", "CIFAR-100_tpr001", "UTKFace_tpr001", "FMNIST_tpr001",
                    "CIFAR-10_acc",   "STL-10_acc",   "CIFAR-100_acc",   "UTKFace_acc",   "FMNIST_acc",
@@ -1211,14 +725,7 @@ def plot_roc_curves_for_attacks(fpr_tpr_dict, dataset_name, save_path, arch):
       - save_path: If provided, saves the figure to the given path (e.g., "roc_plot.pdf")
     """
 
-    
-        
-    # print(f"Save path for ROC curves: {save_path}")
-    # exit(
-    # from matplotlib.font_manager import FontProperties
-    # Update rcParams with your settings
-    # Update rcParams with your settings
-    # Update rcParams with your settings
+   
     size = 30
     params = {
         'axes.labelsize': size,
@@ -1230,18 +737,7 @@ def plot_roc_curves_for_attacks(fpr_tpr_dict, dataset_name, save_path, arch):
         "font.family": "arial",
     }
 
-    # params = {
-    # 'axes.labelsize': size,
-    # 'axes.labelweight': 'bold',   # Make axis labels bold
-    # 'font.size': size,
-    # 'font.weight': 'bold',        # Make all fonts bold
-    # 'legend.fontsize': size,
-    # 'xtick.labelsize': size,
-    # 'ytick.labelsize': size,
-    # 'figure.figsize': [10, 9],
-    # "font.family": "arial",
-    # }
-    
+ 
     plt.rcParams.update(params)
 
     # Define a color palette for consistency
@@ -1708,7 +1204,7 @@ def main():
         TARGET_ROOT = f"./demoloader/trained_model/{arch}/{dataset_name}/"
         roc_curves_pth = f"./roc_curves/{arch}/{dataset_name}/"
         entropy_dis_dr = f"./entropy_dis/{arch}/{dataset_name}/"
-        threshold_curves_pth = f"./thresh_curves/{arch}/{dataset_name}/" # ./demoloader/trained_model/cnn/cifar10/adult_meminf_attack_mode0__com_Results-Mean_mode-apcmia_.csv
+        threshold_curves_pth = f"./thresh_curves/{arch}/{dataset_name}/" # 
         # roc_curves_pth = f"./thresh_curves/{arch}/{dataset_name}/"
         
     else:
@@ -1734,9 +1230,6 @@ def main():
     if args.plot:
         if args.plot_results.lower() == "roc":
             print("roc")
-
-            # save fpr_tpr_data to a csv file at filename = f"{dataset_name}_roc_curves_{arch}.pdf", filepath = os.path.join(roc_curves_pth, filename) with time stamp,
-            
 
             fpr_tpr_data = load_fpr_tpr_for_all_attacks(dataset_name, directory=TARGET_ROOT)
            
@@ -1787,7 +1280,7 @@ def main():
                 print("apcmia data not found.")
              # 2. Plot the ROC curves for all attacks in a single figure.
             print(f"ROC saved to {roc_curves_pth}")
-            # exit()
+           
 
             
 
@@ -1801,10 +1294,7 @@ def main():
 
                 base_directory = "./demoloader/trained_model"  # top-level directory to search
                 output_dir     = "./threshold_plots"          # where to save the figures
-                # load_plot_thresholds(base_directory, output_dir)
                 load_plot_thresholds_sub(base_directory, output_dir)
-                # scatter_3d_thresholds(TARGET_ROOT, threshold_curves_pth)
-                # load_plot_thresholds_bestEp(base_directory, output_dir)
                 exit()
             else:
 
@@ -1825,41 +1315,11 @@ def main():
         print("Training Target model")
         
         acc_gap = target_train_func(MODEL_SAVE_PATH, device, target_train, target_test, target_model, batch_size, use_DP, noise, norm, delta, dataset_name, arch)
-        print("acc_gap: ", acc_gap)
-        # exit()
+        exit()
 
     
-    N=4
-    aug = 2
-    n_qury = 1
-    if attack_name == "m_lira": 
-            print("LiRA inference.")
-            
-            if args.lira_train:
-                lira_train_models(MODEL_SAVE_PATH, device, target_train, target_test, target_model, batch_size, use_DP, noise, norm, delta, dataset_name, arch, n_shadows=N, pkeep=0.5)
-            
-            if args.lira_inference:
-                lira_inference(device, target_train, target_test, target_model, batch_size, dataset_name, arch, n_qury)
-
-            if args.lira_roc:
-                    
-                # lira_scores()
-                # lira_score(dataset_name, target_train)
-                # print("Type of target_train:", type(target_train))
-                lira_process = Lira_score_process(MODEL_SAVE_PATH, attack_name, target_train, dataset_name, aug, arch, ntest=1)
-
-                # lira_process.enhanced_mia_attack()
-                lira_process.lira_score()
-                lira_process.fig_fpr_tpr()
-                # lira_process.enhanced_mia_attack()
-                # lira_process.rmia_attack_loss_reference()
-
-            
-            exit()
-
+   
     if args.attack_type == 0:
-        # acc_gap = 0.335
-        acc_gap = 0.009418
         test_meminf(MODEL_SAVE_PATH, device, num_classes, target_train, target_test, batch_size,  target_model, mode, dataset_name, attack_name, entropy_dis_dr, apcmia_cluster, arch, acc_gap)
         
     else:
