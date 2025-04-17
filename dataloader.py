@@ -862,8 +862,8 @@ def get_model_dataset(dataset_name, device, arch, attr, root):
         if arch.lower() == 'vgg16':
             print("getting vgg16 mode")
             # exit()
-            target_model = VGG16_new(input_channel=input_channel, num_classes=classes)
-            shadow_model = VGG16_new(input_channel=input_channel, num_classes=classes)
+            target_model = VGG16(input_channel=input_channel, num_classes=classes)
+            shadow_model = VGG16(input_channel=input_channel, num_classes=classes)
         elif arch.lower() == 'wrn':
            target_model =  Wide_ResNet28(num_classes=classes)
            shadow_model =  Wide_ResNet28(num_classes=classes)
