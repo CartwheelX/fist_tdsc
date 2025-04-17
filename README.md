@@ -6,8 +6,6 @@ APCMIA selectively perturbs ambiguous non-member prediction vectors using a cont
 
 ---
 
-
-
 ## 🧠 Requirements
 
 - Python 3.8+
@@ -72,8 +70,12 @@ python main.py --plot --plot_results th --dataset_name cifar10 --attack_name apc
 
 ## 📚 Supported Datasets
 
-- Image datasets: CIFAR-10, CIFAR-100, STL10, FMNIST, UTKFace
+- Image datasets: CIFAR-10, CIFAR-100, STL10, FMNIST, UTKFace  
 - Non-image datasets: Purchase-100, Texas-100, Adult, Location
+
+> ⚠️ **Note:** This repository provides only two example datasets — `adult` and `location` — in the `data/` directory for demonstration purposes.  
+To use other datasets (e.g., CIFAR-10, CIFAR-100, Purchase-100), please download them from their official sources as cited in the paper and place them in the corresponding folder under `data/`.  
+Refer to the dataset links in our article or supplementary material for details.
 
 ---
 
@@ -84,7 +86,6 @@ You can run all attacks across:
 - `--arch cnn`
 - `--arch mlp`
 - `--arch vgg16`
-
 
 Example:
 
