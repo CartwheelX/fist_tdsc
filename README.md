@@ -6,15 +6,7 @@ APCMIA selectively perturbs ambiguous non-member prediction vectors using a cont
 
 ---
 
-## 🔍 Key Features
 
-- Adaptive perturbation model trained with contrastive loss
-- Jointly optimized cosine similarity and entropy-based thresholding
-- Inverted sigmoid learning rate schedule for generalization-aware threshold tuning
-- Supports multiple baseline attacks: MIA, MeMIA, SeqMIA, NSH, and LiRA
-- Tested on 9 datasets and 4 architectures: MLP, CNN, VGG16, and WRN
-
----
 
 ## 🧠 Requirements
 
