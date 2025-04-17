@@ -131,8 +131,8 @@ Check the `results/` and `roc_curves/` directories.
 
 ---
 
-## 📄 Citation
+<!-- ## 📄 Citation
 
 If you use this code, please cite our work:
 
-> Khan et al. "Breaking the Shield of Generalization: Adaptive Perturbation-based Contrastive Membership Inference Attacks." ACM CCS 2025 (under review).
+> "apcMIA: Adaptive Perturbation-based Contrastive Membership Inference Attacks." ACM CCS 2025 (under review). -->
