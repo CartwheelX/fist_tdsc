@@ -1,0 +1,8 @@
+# Auto‑detect text files and normalize them to LF in the repo...
+* text=auto
+
+# But ensure shell scripts stay with LF (so they still run on Unix)
+*.sh text eol=lf
+
+# Force Python files to LF in the repo
+*.py text eol=lf
