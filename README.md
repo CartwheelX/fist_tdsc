@@ -44,19 +44,21 @@ meminf.py, my_lira.py    # Attack logic for various MIA baselines
 Example for CIFAR-10 (CNN):
 
 ```bash
-python main.py --attack_type 0 --dataset_name cifar10 --arch cnn --train_model
+python main.py --attack_type 0 --dataset_name cifar10 --arch cnn --train_model 
+python main.py --attack_type 0 --dataset_name cifar10 --arch cnn --train_shadow
+
 ```
 
 ---
 
-### 🚨 Run Membership Inference Attacks
+### 🚨 Train and test our attack model
 
 Run **apcMIA** attack (this command will train our attack and test it):
 
 ```bash
 python main.py --attack_type 0 --dataset_name cifar10 --attack_name apcmia --arch cnn --apcmia_cluster
 ```
-
+**Note:** if you want to plot the cluster results presented in the paper, you need to use `--apcmia_cluster` flag
 ---
 
 ### 📊 Plotting ROC and Threshold Curves
@@ -92,6 +94,7 @@ Example:
 ```bash
 python main.py --attack_type 0 --dataset_name adult --attack_name apcmia --arch mlp --apcmia_cluster
 ```
+**Note:** when attacking non-image datasets used to train MLP architecure, carefull provide the the correct arguments. for instance `--arch cnn` and `--arch vgg16` for all image based datasets ( CIFAR10,CIFAR100,STL10 etc.) and `--arch mlp` for datasets (Location, Adult, etc)
 
 ---
 
