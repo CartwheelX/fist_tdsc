@@ -556,9 +556,12 @@ def prepare_dataset(dataset_name, attr, root, device, arch, DSize):
     test_size = length - train_size
     
     target_train, target_test = torch.utils.data.random_split(dataset, [train_size, test_size])
+    shadow_train, shadow_test = torch.utils.data.random_split(dataset, [train_size, test_size])
+
     # print(f"prepare_dataset-Type of target_train: {type(target_train)}")
     # exit()
-    return num_classes, target_train, target_test, target_model
+    # return num_classes, target_train, target_test, target_model
+    return num_classes, target_train, target_test, shadow_train, shadow_test, target_model, shadow_model
 
 # def prepare_dataset(dataset_name, attr, root, device, arch, DSize):
 #     num_classes, dataset, target_model, shadow_model = get_model_dataset(dataset_name, device, arch, attr=attr, root=root)

@@ -38,6 +38,32 @@ def get_attack_dataset_without_shadow(train_set, test_set, batch_size):
 
     return attack_trainloader, attack_testloader
 
+def get_attack_dataset(train_set, test_set, batch_size):
+    mem_length = int(len(train_set)*0.45)
+    nonmem_length = int(len(test_set)*0.45)
+    mem_train, mem_test, _ = torch.utils.data.random_split(train_set, [mem_length, mem_length, len(train_set)-(mem_length*2)])
+    nonmem_train, nonmem_test, _ = torch.utils.data.random_split(test_set, [nonmem_length, nonmem_length, len(test_set)-(nonmem_length*2)])
+    mem_train, mem_test, nonmem_train, nonmem_test = list(mem_train), list(mem_test), list(nonmem_train), list(nonmem_test)
+
+    for i in range(len(mem_train)):
+        mem_train[i] = mem_train[i] + (1,)
+    for i in range(len(nonmem_train)):
+        nonmem_train[i] = nonmem_train[i] + (0,)
+    for i in range(len(nonmem_test)):
+        nonmem_test[i] = nonmem_test[i] + (0,)
+    for i in range(len(mem_test)):
+        mem_test[i] = mem_test[i] + (1,)
+        
+    attack_train = mem_train + nonmem_train
+    attack_test = mem_test + nonmem_test
+
+    attack_trainloader = torch.utils.data.DataLoader(
+        attack_train, batch_size=batch_size, shuffle=True, num_workers=1, persistent_workers=True)
+    attack_testloader = torch.utils.data.DataLoader(
+        attack_test, batch_size=batch_size, shuffle=True, num_workers=1, persistent_workers=True)
+
+    return attack_trainloader, attack_testloader
+
 
     
 
@@ -246,10 +272,7 @@ def target_train_func_full(PATH, device, train_set, test_set, target_model, batc
     return acc_train, acc_test, overfitting, model
 
 
-
-# def shadow_train_func(PATH, device, shadow_model, batch_size, train_loader, test_loader, use_DP, noise, norm, loss, optimizer, delta):
-
-def shadow_train_func(PATH, device, train_set, test_set, shadow_model, batch_size, use_DP, noise, norm, delta, dataset_name):
+def shadow_train_func(PATH, device, train_set, test_set, shadow_model, batch_size, use_DP, noise, norm, delta, dataset_name, arch):
 
     print("Training shadow model: train set shape", len(train_set), "test set shape:", len(test_set), ", device:", device)
     print(f"Dataset Name: {dataset_name}")
@@ -257,7 +280,8 @@ def shadow_train_func(PATH, device, train_set, test_set, shadow_model, batch_siz
     train_loader = torch.utils.data.DataLoader(train_set, batch_size=batch_size, shuffle=True)
     test_loader = torch.utils.data.DataLoader(test_set, batch_size=batch_size, shuffle=True)
 
-    model = shadow_train_class(train_loader, test_loader, dataset_name, shadow_model, device, use_DP, noise, norm, delta)
+    
+    model = shadow_train_class(train_loader, test_loader, dataset_name, shadow_model, device, use_DP, noise, norm, delta, arch)
 
     acc_train = 0
     acc_test = 0
@@ -278,15 +302,11 @@ def shadow_train_func(PATH, device, train_set, test_set, shadow_model, batch_siz
     return acc_train, acc_test, overfitting
 
 
-# def test_meminf(TARGET_PATH, device, num_classes, target_train, target_test, dataset_name, batch_size, target_model, train_rnn, train_shadow, use_DP, noise, norm, delta, mode)
 
 def test_meminf(PATH, device, num_classes, target_train, target_test, batch_size,  target_model, mode, dataset_name, attack_name, entropy_dis_dr, apcmia_cluster, arch, acc_gap):
-    
-
 
     if attack_name == "lira" or attack_name == "memia" or attack_name == "seqmia" or attack_name == "nsh" or attack_name == "apcmia" or attack_name == "mia" or attack_name == "m_lira":
-        # attack_trainloader, attack_testloader = get_attack_dataset_with_shadow(target_train, target_test, shadow_train, shadow_test, batch_size)
-        attack_trainloader, attack_testloader = get_attack_dataset_without_shadow(target_train, target_test, batch_size)
+        attack_trainloader, attack_testloader = get_attack_dataset(target_train, target_test, batch_size)
     
         
         attack_model = CombinedShadowAttack(num_classes, device, mode, attack_name, hidden_dim=128, layer_dim=1, output_dim=1, batch_size=batch_size)
@@ -1140,6 +1160,7 @@ def main():
     parser.add_argument('-tm', '--train_model', action='store_true')
     parser.add_argument('-ts', '--train_shadow', action='store_true')
     parser.add_argument('-trnn', '--train_rnn', action='store_true')
+    parser.add_argument('-att', '--attack', action='store_true')
     parser.add_argument('-ud', '--use_DP', action='store_true')
     parser.add_argument('-ne', '--noise', type=float, default=1.3)
     parser.add_argument('-nm', '--norm', type=float, default=1.5)
@@ -1164,7 +1185,7 @@ def main():
     args = parser.parse_args()
 
     print(args.DSize)
-    # exit()
+   
 
     os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
     device = torch.device("cuda:0")
@@ -1188,11 +1209,8 @@ def main():
     
     attack_name = args.attack_name
     attack_name = attack_name.lower()
-    # print(f"Attack Name (lowercase): {attack_name}")
-    # exit()
-    train_shadow = args.train_shadow
-    train_rnn = args.train_rnn
-
+    
+   
     # First, check if the dataset requires mlp
     if dataset_name.lower() in ('location', 'texas', 'adult', 'purchase'):
         if arch.lower() != 'mlp':
@@ -1307,21 +1325,78 @@ def main():
         exit()
     
  
-    # num_classes, target_train, target_test, shadow_train, shadow_test, target_model, shadow_model = prepare_dataset(dataset_name, attr, root, device)
-    num_classes, target_train, target_test, target_model =  prepare_dataset(dataset_name, attr, root, device, arch, args.DSize)
-    # combined_signals_path = MODEL_SAVE_PATH + "_LiRA_mul.npz"
-
-    if args.train_model:
-        print("Training Target model")
-        acc_gap = target_train_func(MODEL_SAVE_PATH, device, target_train, target_test, target_model, batch_size, use_DP, noise, norm, delta, dataset_name, arch)
-        exit()
-
     
-   
-    # if args.attack_type == 0:
-    # Train and Test apcMIA
-    test_meminf(MODEL_SAVE_PATH, device, num_classes, target_train, target_test, batch_size,  target_model, mode, dataset_name, attack_name, entropy_dis_dr, apcmia_cluster, arch, acc_gap)
-        
+    num_classes, target_train, target_test, shadow_train, shadow_test, target_model, shadow_model =  prepare_dataset(dataset_name, attr, root, device, arch, args.DSize)
+    
+    # Ensure at least one action flag is provided
+    if not (args.train_model or args.train_shadow or args.attack):
+        parser.error(
+            "No action requested. "
+            "Please specify at least one of the flags --train_model, --train_shadow, or --attack."
+        )
+
+    # Train the target model and record its overfitting gap
+    if args.train_model:
+        print("[INFO] Starting target model training...")
+        acc_gap = target_train_func(
+            MODEL_SAVE_PATH,
+            device,
+            target_train,
+            target_test,
+            target_model,
+            batch_size,
+            use_DP,
+            noise,
+            norm,
+            delta,
+            dataset_name,
+            arch
+        )
+        # acc_gap now holds the training–testing accuracy difference
+
+    # Train the shadow model (used for the attack)
+    elif args.train_shadow:
+        print("[INFO] Starting shadow model training...")
+        shadow_train_func(
+            MODEL_SAVE_PATH,
+            device,
+            shadow_train,
+            shadow_test,
+            shadow_model,
+            batch_size,
+            use_DP,
+            noise,
+            norm,
+            delta,
+            dataset_name,
+            arch
+        )
+        # Shadow model artifacts are saved alongside the target
+
+    # Perform the membership-inference attack
+    if args.attack:
+        print("[INFO] Loading previously computed accuracy gap...")
+        acc_gap = get_acc_gap(MODEL_SAVE_PATH)
+        print(f"[INFO] Using acc_gap = {acc_gap:.5f} for attack.")
+
+        print("[INFO] Executing apcMIA attack...")
+        test_meminf(
+            MODEL_SAVE_PATH,
+            device,
+            num_classes,
+            target_train,
+            target_test,
+            batch_size,
+            target_model,
+            mode,
+            dataset_name,
+            attack_name,
+            entropy_dis_dr,
+            apcmia_cluster,
+            arch,
+            acc_gap
+        )
+            
     
 
 if __name__ == "__main__":

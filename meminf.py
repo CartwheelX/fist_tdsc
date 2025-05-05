@@ -56,99 +56,7 @@ def weights_init(m):
         nn.init.xavier_normal_(m.weight)
         nn.init.constant_(m.bias, 0)
 
-class shadow_train_class():
-    def __init__(self, trainloader, testloader, dataset_name, model, device, use_DP, noise, norm, delta):
-        self.delta = delta
-        self.use_DP = use_DP
-        self.device = device
-        self.net = model.to(self.device)
-        self.trainloader = trainloader
-        self.testloader = testloader
-        
-        if self.device == 'cuda':
-            self.net = torch.nn.DataParallel(self.net)
-            cudnn.benchmark = True
-
-        # set a codition on weight decay to be 5e-3 in case if dataset is purchase
-        if dataset_name == 'purchase':
-            self.optimizer = optim.SGD(self.net.parameters(), lr=1e-2, momentum=0.9, weight_decay=0.0)
-        else:
-            self.optimizer = optim.SGD(self.net.parameters(), lr=1e-2, momentum=0.9, weight_decay=5e-4)
-
-
-        self.criterion = nn.CrossEntropyLoss()
-        # self.optimizer = optim.SGD(self.net.parameters(), lr=1e-2, momentum=0.9, weight_decay=5e-3)
-        self.scheduler = lr_scheduler.MultiStepLR(self.optimizer, [50, 75], 0.1)
-
-
-
-    # Training
-    def train(self):
-        self.net.train()
-        
-        train_loss = 0
-        correct = 0
-        total = 0
-        
-        for batch_idx, (inputs, targets) in enumerate(self.trainloader):
-
-            inputs, targets = inputs.to(self.device), targets.to(self.device)
-
-            self.optimizer.zero_grad()
-            # outputs = self.model(inputs)
-            outputs = self.net(inputs)
-
-            loss = self.criterion(outputs, targets)
-            loss.backward()
-            
-            self.optimizer.step()
-
-            train_loss += loss.item()
-            _, predicted = outputs.max(1)
-            total += targets.size(0)
-            correct += predicted.eq(targets).sum().item()
-
-        if self.use_DP:
-            epsilon = self.privacy_engine.accountant.get_epsilon(delta=self.delta)
-            # epsilon, best_alpha = self.optimizer.privacy_engine.get_privacy_spent(1e-5)
-            print("\u03B5: %.3f \u03B4: 1e-5" % (epsilon))
-                
-        self.scheduler.step()
-
-        print( 'Train Acc: %.3f%% (%d/%d) | Loss: %.3f' % (100.*correct/total, correct, total, 1.*train_loss/batch_idx))
-
-        return 1.*correct/total
-
-
-    def saveModel(self, path):
-        torch.save(self.net.state_dict(), path)
-
-    def get_noise_norm(self):
-        return self.noise_multiplier, self.max_grad_norm
-
-    def test(self):
-        # self.model.eval()
-        self.net.eval()
-        test_loss = 0
-        correct = 0
-        total = 0
-        with torch.no_grad():
-            for inputs, targets in self.testloader:
-                inputs, targets = inputs.to(self.device), targets.to(self.device)
-                outputs = self.net(inputs)
-
-                loss = self.criterion(outputs, targets)
-
-                test_loss += loss.item()
-                _, predicted = outputs.max(1)
-                total += targets.size(0)
-                correct += predicted.eq(targets).sum().item()
-
-            print( 'Test Acc: %.3f%% (%d/%d)' % (100.*correct/total, correct, total))
-
-        return 1.*correct/total
-
-     
+    
 class target_train_class():
     def __init__(self, trainloader, testloader, dataset_name, model, device, use_DP, noise, norm, delta, arch):
         self.use_DP = use_DP
@@ -320,8 +228,195 @@ class target_train_class():
 
         return 1.*correct/total
 
+
+class shadow_train_class():
+    def __init__(self, trainloader, testloader, dataset_name, model, device, use_DP, noise, norm, delta, arch):
+        self.use_DP = use_DP
+        self.device = device
+        self.delta = delta
+        self.net = model.to(self.device)
+        self.trainloader = trainloader
+        self.testloader = testloader
+        self.arch = arch
+
+        if self.device == 'cuda':
+            self.net = torch.nn.DataParallel(self.net)
+            cudnn.benchmark = True
+
+        self.criterion = nn.CrossEntropyLoss()
+        # self.optimizer = optim.SGD(self.net.parameters(), lr=1e-2, momentum=0.9, weight_decay=5e-4)
+        self.noise_multiplier, self.max_grad_norm = noise, norm
+
+        
+        if dataset_name == 'purchase':
+            self.optimizer = optim.SGD(self.net.parameters(), lr=0.01, momentum=0.9, weight_decay=0.0)
+
+            if self.use_DP:
+                self.privacy_engine = PrivacyEngine()
+                self.model, self.optimizer, self.trainloader = self.privacy_engine.make_private(
+                    module=model,
+                    optimizer=self.optimizer,
+                    data_loader=self.trainloader,
+                    noise_multiplier=self.noise_multiplier,
+                    max_grad_norm=self.max_grad_norm,
+                )          
+                print( 'noise_multiplier: %.3f | max_grad_norm: %.3f' % (self.noise_multiplier, self.max_grad_norm))
+
+            self.scheduler = lr_scheduler.MultiStepLR(self.optimizer, [50, 75], 0.1)
+        elif dataset_name == 'texas':
+            self.optimizer = optim.SGD(self.net.parameters(), lr=0.01, momentum=0.9,  weight_decay=1e-4)
+
+            if self.use_DP:
+                self.privacy_engine = PrivacyEngine()
+                self.model, self.optimizer, self.trainloader = self.privacy_engine.make_private(
+                    module=model,
+                    optimizer=self.optimizer,
+                    data_loader=self.trainloader,
+                    noise_multiplier=self.noise_multiplier,
+                    max_grad_norm=self.max_grad_norm,
+                )          
+                print( 'noise_multiplier: %.3f | max_grad_norm: %.3f' % (self.noise_multiplier, self.max_grad_norm))
+
+            self.scheduler = lr_scheduler.StepLR(self.optimizer, step_size=30, gamma=0.1)
+        elif dataset_name == 'adult':
+            self.optimizer = optim.SGD(self.net.parameters(), lr=0.001, momentum=0.9,  weight_decay=1e-4)
+
+            if self.use_DP:
+                self.privacy_engine = PrivacyEngine()
+                self.model, self.optimizer, self.trainloader = self.privacy_engine.make_private(
+                    module=model,
+                    optimizer=self.optimizer,
+                    data_loader=self.trainloader,
+                    noise_multiplier=self.noise_multiplier,
+                    max_grad_norm=self.max_grad_norm,
+                )          
+                print( 'noise_multiplier: %.3f | max_grad_norm: %.3f' % (self.noise_multiplier, self.max_grad_norm))
+
+            self.scheduler = lr_scheduler.StepLR(self.optimizer, step_size=30, gamma=0.1)
+
+        else:
+
+            if self.arch == 'vgg16':
+                self.optimizer = torch.optim.SGD(model.parameters(), lr=0.005, weight_decay = 0.005, momentum = 0.9)
+            elif self.arch == 'wrn':
+                # optim.SGD(net.parameters(), lr=cf.learning_rate(args.lr, epoch), momentum=0.9, weight_decay=5e-4)
+                self.optimizer = torch.optim.SGD(model.parameters(), lr=0.1, weight_decay=5e-4, momentum = 0.9)
+            else:
+                self.optimizer = optim.SGD(self.net.parameters(), lr=1e-2,  weight_decay=5e-4, momentum=0.9)
+
+            if self.use_DP:
+                self.privacy_engine = PrivacyEngine()
+                self.model, self.optimizer, self.trainloader = self.privacy_engine.make_private(
+                    module=model,
+                    optimizer=self.optimizer,
+                    data_loader=self.trainloader,
+                    noise_multiplier=self.noise_multiplier,
+                    max_grad_norm=self.max_grad_norm,
+                )          
+                print( 'noise_multiplier: %.3f | max_grad_norm: %.3f' % (self.noise_multiplier, self.max_grad_norm))
+
+            self.scheduler = lr_scheduler.MultiStepLR(self.optimizer, [50, 75], 0.1)
+
+      
+    # Training
+    def train(self):
+        self.net.train()
+        
+        train_loss = 0
+        correct = 0
+        total = 0
+        
+        for batch_idx, (inputs, targets) in enumerate(self.trainloader):
+            if isinstance(targets, list):
+                targets = targets[0]
+
+            if str(self.criterion) != "CrossEntropyLoss()":
+                targets = torch.from_numpy(np.eye(self.num_classes)[targets]).float()
+             
+            inputs, targets = inputs.to(self.device), targets.to(self.device)
+            self.optimizer.zero_grad()
+            # print(f"inputs size: {inputs.size()}, targets size: {targets.size()}")
+            # exit()
+            outputs = self.net(inputs)
+
+            loss = self.criterion(outputs, targets)
+            loss.backward()
+            # self.scheduler.step()
+            self.optimizer.step()
+
+            train_loss += loss.item()
+            _, predicted = outputs.max(1)
+            total += targets.size(0)
+            if str(self.criterion) != "CrossEntropyLoss()":
+                _, targets= targets.max(1)
+
+            correct += predicted.eq(targets).sum().item()
+
+        if self.use_DP:
+            epsilon = self.privacy_engine.accountant.get_epsilon(delta=self.delta)
+            # epsilon, best_alpha = self.optimizer.privacy_engine.get_privacy_spent(1e-5)
+            print("\u03B5: %.3f \u03B4: 1e-5" % (epsilon))
+                
+        self.scheduler.step()
+
+        print( 'Train Acc: %.3f%% (%d/%d) | Loss: %.3f' % (100.*correct/total, correct, total, 1.*train_loss/batch_idx))
+
+        return 1.*correct/total
+
+
+    def saveModel(self, path):
+        torch.save(self.net.state_dict(), path)
+        
+
+    def get_noise_norm(self):
+        return self.noise_multiplier, self.max_grad_norm
+
+    def test(self):
+        self.net.eval()
+        test_loss = 0
+        correct = 0
+        total = 0
+        with torch.no_grad():
+            for inputs, targets in self.testloader:
+                if isinstance(targets, list):
+                    targets = targets[0]
+                if str(self.criterion) != "CrossEntropyLoss()":
+                    targets = torch.from_numpy(np.eye(self.num_classes)[targets]).float()
+
+                inputs, targets = inputs.to(self.device), targets.to(self.device)
+                outputs = self.net(inputs)
+
+                loss = self.criterion(outputs, targets)
+
+                test_loss += loss.item()
+                _, predicted = outputs.max(1)
+                total += targets.size(0)
+                if str(self.criterion) != "CrossEntropyLoss()":
+                    _, targets= targets.max(1)
+
+                correct += predicted.eq(targets).sum().item()
+
+            print( 'Test Acc: %.3f%% (%d/%d)' % (100.*correct/total, correct, total))
+
+        return 1.*correct/total
+
             
-   
+
+def get_acc_gap(MODEL_SAVE_PATH):
+    
+    pattern = MODEL_SAVE_PATH + "_accs_*.csv"
+    # print("Looking for acc_gap CSVs with pattern:", pattern)
+    csv_files = glob.glob(pattern)
+    if not csv_files:
+        raise FileNotFoundError(f"No accs CSV found {pattern}, Please train traget model first \n ")
+    latest_csv = max(csv_files, key=os.path.getmtime)
+    print(f"Loading overfitting (acc_gap) from {latest_csv}")
+
+    df = pd.read_csv(latest_csv)
+    acc_gap = df['overfitting'].iloc[-1]
+    # print(f"Acc gap: {acc_gap}")
+    return acc_gap 
+    
 def get_ent_lr(acc_gap, max_lr=0.005, k=10, mid=0.5):
     return max_lr * (1 - 1 / (1 + np.exp(-k * (acc_gap - mid))))
 
