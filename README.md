@@ -74,7 +74,7 @@ python main.py --dataset_name location --train_shadow --use_DP --noise 0.3 --nor
 
 
 
-Train the target with DP-SGD and Attack the DP-SGD trained models:
+Train the target with DP-SGD and **Attack**:
 
 ```bash
 python main.py --dataset_name location --train_model --attack  --use_DP --noise 0.3 --norm 5 --delta 1e-5
