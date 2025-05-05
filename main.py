@@ -313,7 +313,7 @@ def test_meminf(PATH, device, num_classes, target_train, target_test, batch_size
         
         perturb_model = PerturbationModel(num_classes, device, hidden_dim=128, layer_dim=1, output_dim=1, batch_size=batch_size)
         
-        attack_mode0_com(PATH + "_target.pth", PATH, device, attack_trainloader, attack_testloader, target_model, shadow_model, attack_model, perturb_model, num_classes, mode, dataset_name, attack_name, entropy_dis_dr, apcmia_cluster, arch, acc_gap)
+        attack_mode0_com(PATH + "_target.pth", PATH + "_shadow.pth",  PATH, device, attack_trainloader, attack_testloader, target_model, shadow_model, attack_model, perturb_model, num_classes, mode, dataset_name, attack_name, entropy_dis_dr, apcmia_cluster, arch, acc_gap)
 
     else:
         raise Exception("Wrong attack name")
@@ -841,7 +841,7 @@ def plot_roc_curves_for_attacks(fpr_tpr_dict, dataset_name, save_path, arch):
     filepath = os.path.join(save_path, filename)
     print(f"File path for roc curve: {filepath}")
     if save_path and not os.path.exists(save_path):
-        os.makedirs(save_path)
+        os.makedirs(save_path, exist_ok=True)
     plt.savefig(filepath, format='pdf', dpi=300, bbox_inches="tight")
     print(f"Figure saved to {save_path}")
     # plt.show()
@@ -1290,6 +1290,9 @@ def main():
                 filename = f"{dataset_name}_roc_curves_{arch}_{timestamp}.xlsx"
                 filepath = os.path.join(roc_curves_pth, filename)
 
+                out_dir = os.path.dirname(filepath)
+                os.makedirs(out_dir, exist_ok=True)
+
                 # Save both DataFrames to different sheets in the same Excel file.
                 with pd.ExcelWriter(filepath) as writer:
                     df_roc.to_excel(writer, sheet_name="ROC_Curves", index=False)
@@ -1355,7 +1358,7 @@ def main():
         # acc_gap now holds the training–testing accuracy difference
 
     # Train the shadow model (used for the attack)
-    elif args.train_shadow:
+    if args.train_shadow:
         print("[INFO] Starting shadow model training...")
         shadow_train_func(
             MODEL_SAVE_PATH,

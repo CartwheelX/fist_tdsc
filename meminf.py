@@ -242,7 +242,7 @@ class shadow_train_class():
             cudnn.benchmark = True
 
         self.criterion = nn.CrossEntropyLoss()
-        # self.optimizer = optim.SGD(self.net.parameters(), lr=1e-2, momentum=0.9, weight_decay=5e-4)
+       
         self.noise_multiplier, self.max_grad_norm = noise, norm
 
         
@@ -443,11 +443,11 @@ def sigmoid_adaptive_lr(gap, mid_gap=0.45, gap_range=0.65, max_lr=0.1, min_lr=0.
     return min_lr + (max_lr - min_lr) * sigmoid
 
 class attack_for_blackbox_com_NEW():
-    def __init__(self,TARGET_PATH, Perturb_MODELS_PATH, ATTACK_SETS,ATTACK_SETS_PV_CSV, attack_train_loader, attack_test_loader, target_model,shadow_model,  attack_model, perturb_model, device, dataset_name, attack_name, num_classes, acc_gap):
+    def __init__(self,TARGET_PATH, SHADOW_PATH, Perturb_MODELS_PATH, ATTACK_SETS,ATTACK_SETS_PV_CSV, attack_train_loader, attack_test_loader, target_model,shadow_model,  attack_model, perturb_model, device, dataset_name, attack_name, num_classes, acc_gap):
         self.device = device
 
         self.TARGET_PATH = TARGET_PATH
-        # self.SHADOW_PATH = SHADOW_PATH
+        self.SHADOW_PATH = SHADOW_PATH
         self.ATTACK_SETS = ATTACK_SETS
         self.ATTACK_SETS_PV_CSV = ATTACK_SETS_PV_CSV
         
@@ -2477,20 +2477,6 @@ class attack_for_blackbox_com_NEW():
         fpr, tpr, thresholds = roc_curve(final_test_gndtrth, final_test_probabe)
         roc_auc = auc(fpr, tpr)
 
-        # if plot:
-        #     plt.figure(figsize=(8, 6))
-        #     plt.plot(fpr, tpr, label="ROC curve (AUC = %0.2f)" % roc_auc, lw=2)
-        #     plt.plot([0, 1], [0, 1], 'k--', lw=2)
-        #     plt.xlim([0.0, 1.0])
-        #     plt.ylim([0.0, 1.05])
-        #     plt.xlabel("False Positive Rate")
-        #     plt.ylabel("True Positive Rate")
-        #     plt.title("Receiver Operating Characteristic")
-        #     plt.legend(loc="lower right")
-        #     if save_path is not None:
-        #         plt.savefig(save_path)
-        #     plt.show()
-
         return fpr, tpr, thresholds, roc_auc
 
     def compute_roc_curve_apcmia(self, atk_model, prt_model, consin_thr, entrp_thr):
@@ -3972,7 +3958,8 @@ def save_best_checkpoint(val_loss, attack_model, perturb_model, cosine_threshold
     torch.save(checkpoint, checkpoint_path)
     print(f"Checkpoint saved to {checkpoint_path}")
 
-def attack_mode0_com(TARGET_PATH, ATTACK_PATH, device, attack_trainloader, attack_testloader, target_model, shadow_model, attack_model, perturb_model, num_classes, mode, dataset_name, attack_name, entropy_dis_dr, apcmia_cluster, arch, acc_gap):
+# attack_mode0_com(PATH + "_target.pth", PATH + "_shadow.pth",  PATH, device, attack_trainloader, attack_testloader, target_model, shadow_model, attack_model, perturb_model, num_classes, mode, dataset_name, attack_name, entropy_dis_dr, apcmia_cluster, arch, acc_gap)
+def attack_mode0_com(TARGET_PATH, SHADOW_PATH, ATTACK_PATH, device, attack_trainloader, attack_testloader, target_model, shadow_model, attack_model, perturb_model, num_classes, mode, dataset_name, attack_name, entropy_dis_dr, apcmia_cluster, arch, acc_gap):
     MODELS_PATH = ATTACK_PATH + "_meminf_"+attack_name+"_.pth"
     Perturb_MODELS_PATH = ATTACK_PATH + "_perturb_model.pth"
 
@@ -3999,7 +3986,7 @@ def attack_mode0_com(TARGET_PATH, ATTACK_PATH, device, attack_trainloader, attac
     
     
         
-    attack = attack_for_blackbox_com_NEW(TARGET_PATH, Perturb_MODELS_PATH, ATTACK_SETS,ATTACK_SETS_PV_CSV, attack_trainloader, attack_testloader, target_model, shadow_model, attack_model,perturb_model, device, dataset_name, attack_name, num_classes, acc_gap)
+    attack = attack_for_blackbox_com_NEW(TARGET_PATH,SHADOW_PATH, Perturb_MODELS_PATH,  ATTACK_SETS,ATTACK_SETS_PV_CSV, attack_trainloader, attack_testloader, target_model, shadow_model, attack_model,perturb_model, device, dataset_name, attack_name, num_classes, acc_gap)
            
     if 1:
         
@@ -4098,7 +4085,7 @@ def attack_mode0_com(TARGET_PATH, ATTACK_PATH, device, attack_trainloader, attac
             print(f'computing ROC for apcmia')
             attack.test_saved_model_apcmia(attack.attack_model, attack.perturb_model,best_cosine_threshold,best_entropy_threshold)
             # and dataset_name != "adult"
-            if(dataset_name != "cifar10" and dataset_name != "cifar100" and dataset_name != "stl10" and dataset_name != "purchase" and dataset_name != "texas" and dataset_name != "adult" ):
+            if(dataset_name != "cifar10" and dataset_name != "cifar100" and dataset_name != "stl10" and dataset_name != "purchase" and dataset_name != "texas" and dataset_name != "adult" and dataset_name != "location"):
                 fpr, tpr, thresholds, roc_auc = attack.compute_roc_curve_apcmia(attack.attack_model, attack.perturb_model,best_cosine_threshold,best_entropy_threshold)
            
             attack.compute_entropy_distribution_new_norm(attack.attack_model, attack.perturb_model,best_cosine_threshold,best_entropy_threshold, entropy_dis_dr)

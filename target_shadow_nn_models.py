@@ -14,7 +14,11 @@ from functools import partial
 from typing import Any, Callable, List, Optional, Union, Tuple
 torch.manual_seed(0)
 import torch.nn.functional as F
+import math
 
+
+from torch.utils.data import Dataset, DataLoader
+import pickle
 
 class CNN(nn.Module):
     def __init__(self, input_channel=3, num_classes=10):
@@ -244,21 +248,17 @@ class PerturbationModel(nn.Module):
           
 		)
         self.model = nn.Sequential(
-            # nn.Linear(class_num, 128),  # First hidden layer with 64 neurons
-            # nn.ReLU(),                 # Activation function
-            # nn.BatchNorm1d(128),        # Batch normalization
-            
+           
             nn.Linear(class_num, 256),         # Second hidden layer with 32 neurons
             nn.ReLU(),
-            # nn.BatchNorm1d(64),
+          
             
             nn.Linear(256, 128),         # Second hidden layer with 32 neurons
             nn.ReLU(),
 
             nn.Linear(128, 64),         # Second hidden layer with 32 neurons
             nn.ReLU(),
-            # nn.BatchNorm1d(32),
-
+           
             nn.Linear(64, 32),         # Second hidden layer with 32 neurons
             nn.ReLU(),
 
@@ -270,8 +270,7 @@ class PerturbationModel(nn.Module):
          return self.model(PV_batch)
        
  
-from torch.utils.data import Dataset, DataLoader
-import pickle
+
 
 class AttackDataset(Dataset):
     def __init__(self, pickle_path):
@@ -406,7 +405,7 @@ class CombinedShadowAttack(nn.Module):
 		)
         
         self.mia_Encoder_Component = nn.Sequential(
-			nn.Linear(class_num, 512), #mia
+			nn.Linear(class_num, 512),
 			nn.ReLU(),
 			nn.Linear(512, 256),
 			nn.ReLU(),
@@ -417,7 +416,7 @@ class CombinedShadowAttack(nn.Module):
 		)
         
         self.meMIA_Encoder_Component = nn.Sequential(
-			nn.Linear(class_num+64, 512), #meMIA
+			nn.Linear(class_num+64, 512),
 			nn.ReLU(),
 			nn.Linear(512, 256),
 			nn.ReLU(),
@@ -427,7 +426,7 @@ class CombinedShadowAttack(nn.Module):
            
 		)
         self.Encoder_Component = nn.Sequential(
-			nn.Linear(class_num+64, 512), #mia_actual
+			nn.Linear(class_num+64, 512),
 			nn.ReLU(),
 			nn.Linear(512, 256),
 			nn.ReLU(),
@@ -495,74 +494,9 @@ class CombinedShadowAttack(nn.Module):
         self.hidden3 = self.init_hidden3()
        
         if self.attack_name == "apcmia":
-            # print("apcmia here!")
-            # exit()
             return self.pertubed_attack(output, prediction)
         
-        elif self.attack_name == "nsh":
-            # ! NSH attack
-            
-            label_one_hot_encoded = torch.nn.functional.one_hot(label.to(torch.int64), self.input_dim).float().to(self.device)
-            # print(f"size of label: {label_one_hot_encoded.size()}")
-            # print(f"size of label: {label_one_hot_encoded.dtype}")
-            
-            # exit()
-            
-            out_nsh = self.Output_NSH(output)#ouput --> class_num
-            lable_nsh =  self.label_NSH(label_one_hot_encoded)
-            
-            combined_nsh = torch.cat((out_nsh, lable_nsh), 1)
-            final_result = self.final_NSH(combined_nsh)
-            return final_result
-        
-        elif self.attack_name == "seqmia":
-            x = output.view(self.batch_size, 1, self.input_dim)
-            
-            x1, self.hidden1 = self.lstm1(x, self.hidden1)
-            x2 = self.dropout1(x1[:, -1, :])
-            x2 = x2.view(self.batch_size, 1, x2.size()[1])
-            x3, self.hidden2 = self.lstm2(x2, self.hidden2)
-            x4 = self.dropout2(x3[:, -1, :])
-            x4 = x4.view(self.batch_size, 1, x4.size()[1])
-            x5, self.hidden2 = self.lstm3(x4, self.hidden3)
-            
-            final_result  = self.hidden2label(x5[:, -1, :])
-            return final_result
-
-
-        elif self.attack_name == "mia":
-            #! mia
-            # print("mia here!")
-            # exit()
-            Prediction_Component_result = self.Prediction_Component(prediction) #ouput --> class_num 64
-            # output = self.Output_Component(output) #64
-            final_result = self.Encoder_Component(torch.cat((Prediction_Component_result, output), 1))
-            final_result = self.mia_Encoder_Component(output)
-            return final_result
-
-        elif self.attack_name == "memia":
-            # ! Mine combined architecture
-            label_one_hot_encoded = torch.nn.functional.one_hot(label.to(torch.int64), self.input_dim).float()
-            
-            x = output.view(self.batch_size, 1, self.input_dim)
-            x1, self.hidden1 = self.lstm1(x, self.hidden1)
-            # x2 = self.dropout1(x1[:, -1, :])
-            x2 = x1[:, -1, :]
-            x2 = x2.view(self.batch_size, 1, x2.size()[1])
-            x3, self.hidden2 = self.lstm2(x2, self.hidden2)
-            # x4 = self.dropout2(x3[:, -1, :])
-            x4 = x3[:, -1, :]
-            x4 = x4.view(self.batch_size, 1, x4.size()[1])
-            x5, self.hidden2 = self.lstm3(x4, self.hidden3)
-            
-            output = self.Output_Component_meMIA(output) #64
-            # exit()
-            Prediction_Component_result = self.Prediction_Component(prediction) #ouput --> class_num|64
-            final_inputs = torch.cat((x5[:, -1, :],Prediction_Component_result, output), 1)
-            final_result = self.meMIA_Encoder_Component_joint(final_inputs)
-            return final_result
-
-            
+           
 
 
 class CNN(nn.Module):
@@ -641,7 +575,7 @@ class FcBlock(nn.Module):
     def forward(self, x):
         fwd = self.layers(x)
         return fwd
-import math
+
 
 class VGG16(nn.Module):
     def __init__(self,input_channel, num_classes ):

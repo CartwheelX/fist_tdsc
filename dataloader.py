@@ -145,51 +145,6 @@ def Location(num_classes):
     return dataset
 
 
-# def texas(num_classes):
-# def texas(num_classes):
-#     dataset = []
-#     feats = []
-#     labels = []
-
-#     feats_file_path = "data/texas/feats"
-#     labels_file_path = "data/texas/labels"
-
-#     # Check if both files exist
-#     if not os.path.exists(feats_file_path):
-#         print("Feats file does not exist.")
-#         return None
-#     if not os.path.exists(labels_file_path):
-#         print("Labels file does not exist.")
-#         return None
-
-#     # Read features from the feats file
-#     with open(feats_file_path, 'r') as f:
-#         for line in f:
-#             # Each line is expected to be a comma-separated list of numbers
-#             tokens = line.strip().split(',')
-#             # Convert each token to a float (or int, if that suits your data better)
-#             feature_vector = [float(token) for token in tokens]
-#             feats.append(feature_vector)
-
-#     # Read labels from the labels file
-#     with open(labels_file_path, 'r') as f:
-#         for line in f:
-#             # Each line is expected to contain one label
-#             label = int(line.strip())
-#             labels.append(label)
-
-#     # Convert lists to tensors/arrays
-#     X = torch.tensor(feats, dtype=torch.float)
-#     Y = np.array(labels).reshape(-1, 1)
-#     # Adjust labels to zero-index if needed
-#     Y = Y - 1
-
-#     # Combine features and labels into a dataset list
-#     for i in range(X.size(0)):
-#         dataset.append((X[i], Y[i].item()))
-
-#     print(f"Loaded dataset with {len(dataset)} samples.")
-#     return dataset
 
 def texas(num_classes):
     # Path to store the processed dataset.
@@ -516,30 +471,6 @@ def adult(num_classes):
     return dataset
 
 
-# def prepare_dataset(dataset_name, attr, root, device):
-#     num_classes, dataset, target_model, shadow_model = get_model_dataset(dataset_name, device, attr=attr, root=root)
-#     length = len(dataset)
-#     each_length = length//4
-#     target_train, target_test, shadow_train, shadow_test, _ = torch.utils.data.random_split(dataset, [each_length, each_length, each_length, each_length, len(dataset)-(each_length*4)])
-    
-#     return num_classes, target_train, target_test, shadow_train, shadow_test, target_model, shadow_model
-
-
-# def prepare_dataset(dataset_name, attr, root, device):
-    
-#     num_classes, dataset, target_model, shadow_model = get_model_dataset(dataset_name, device, attr=attr, root=root)
-#     length = len(dataset)
-    
-#     traning_size = 2500    
-#     split_len = traning_size//2
-    
-#     each_length = length//4
-    
-#     target_train, target_test, shadow_train, shadow_test, _ = torch.utils.data.random_split(dataset, [split_len, split_len, split_len, split_len, len(dataset)-(split_len*4)])
-    
-#     return num_classes, target_train, target_test, shadow_train, shadow_test, target_model, shadow_model
-
-# ccccc
 
 
 def prepare_dataset(dataset_name, attr, root, device, arch, DSize):
@@ -547,65 +478,15 @@ def prepare_dataset(dataset_name, attr, root, device, arch, DSize):
     length = len(dataset)
     
     print(f"Dataset {dataset_name},  shape: {len(dataset)} samples")
-    # exit()
     
-    # print(f"prepare_dataset-Type of dataset: {type(dataset)}")
-    # exit()
-    # Split the dataset into 50% training and 50% testing
     train_size = length // 2
     test_size = length - train_size
     
     target_train, target_test = torch.utils.data.random_split(dataset, [train_size, test_size])
     shadow_train, shadow_test = torch.utils.data.random_split(dataset, [train_size, test_size])
 
-    # print(f"prepare_dataset-Type of target_train: {type(target_train)}")
-    # exit()
-    # return num_classes, target_train, target_test, target_model
-    return num_classes, target_train, target_test, shadow_train, shadow_test, target_model, shadow_model
-
-# def prepare_dataset(dataset_name, attr, root, device, arch, DSize):
-#     num_classes, dataset, target_model, shadow_model = get_model_dataset(dataset_name, device, arch, attr=attr, root=root)
-#     length = len(dataset)
-#     # train_subset_size = 30000
-#     # train_subset_size = 25000
-#     # train_subset_size = 20000
-#     train_subset_size = DSize
-
-#     print(f"Dataset {dataset_name},  shape: {len(dataset)} samples")
-    
-#     # # print(f"prepare_dataset-Type of dataset: {type(dataset)}")
-#     # # exit()
-#     # # Split the dataset into 50% training and 50% testing
-#     # train_size = length // 2
-#     # test_size = length - train_size
-    
-#     # target_train, target_test = torch.utils.data.random_split(dataset, [train_size, test_size])
-#     # # print(f"prepare_dataset-Type of target_train: {type(target_train)}")
    
-    
-#     length = len(dataset)
-#     print(f"Dataset {dataset_name}, shape: {length} samples")
-    
-#     if train_subset_size is None:
-#         # Equal split: 50% for training and 50% for testing.
-#         train_size = length // 2
-#         test_size = length - train_size
-#         target_train, target_test = torch.utils.data.random_split(dataset, [train_size, test_size])
-#     else:
-#         total = 2 * train_subset_size
-#         if total > length:
-#             raise ValueError("Requested subset size exceeds dataset size.")
-#         # Randomly choose 'total' samples from the dataset.
-#         indices = torch.randperm(length)[:total]
-#         subset = torch.utils.data.Subset(dataset, indices.tolist())
-#         # Split the subset equally.
-#         target_train, target_test = torch.utils.data.random_split(subset, [train_subset_size, train_subset_size])
-        
-#     print(f"Subset size: {len(target_train)} samples training")
-#     print(f"Subset size: {len(target_test)} samples testing")
-#     # print(f"prepare_dataset-Type of target_train: {type(target_train)}")
-#     # exit()
-#     return num_classes, target_train, target_test, target_model
+    return num_classes, target_train, target_test, shadow_train, shadow_test, target_model, shadow_model
 
 
 
@@ -763,18 +644,7 @@ def get_model_dataset(dataset_name, device, arch, attr, root):
                                 std=[0.229, 0.224, 0.225]),
         ])
 
-        # transform = transforms.Compose([
-        #     transforms.Resize((64, 64)),
-        #     transforms.ToTensor(),
-        #     # transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
-        #     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
-        # ])
-
-        # train_set = torchvision.datasets.CIFAR100(
-        #         root=root, train=True, transform=transform, download=True)
-        # test_set = torchvision.datasets.CIFAR100(
-        #         root=root, train=False, transform=transform, download=True)
-
+       
 
         train_set = torchvision.datasets.Country211(root=root, split='train', transform=transform, download=True)
         test_set = torchvision.datasets.Country211(root=root, split='test', transform=transform, download=True)
@@ -867,9 +737,6 @@ def get_model_dataset(dataset_name, device, arch, attr, root):
             # exit()
             target_model = VGG16(input_channel=input_channel, num_classes=classes)
             shadow_model = VGG16(input_channel=input_channel, num_classes=classes)
-        elif arch.lower() == 'wrn':
-           target_model =  Wide_ResNet28(num_classes=classes)
-           shadow_model =  Wide_ResNet28(num_classes=classes)
         elif arch.lower() == 'cnn':
             print("getting cnn model")
             # exit()
