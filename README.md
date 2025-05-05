@@ -88,8 +88,8 @@ Here `--norm` represents the clipping value. Adjust DP parameters as needed to f
 ### 📊 Plotting ROC and Threshold Curves
 
 ```bash
-python main.py --plot --plot_results roc --dataset_name location --attack_name apcmia
-python main.py --plot --plot_results th --dataset_name location --attack_name apcmia
+python main.py --plot --plot_results roc --dataset_name location --arch mlp --attack_name apcmia
+python main.py --plot --plot_results th --dataset_name location --arch mlp --attack_name apcmia
 ```
 
 ---
