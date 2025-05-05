@@ -53,7 +53,7 @@ python main.py --dataset_name location --arch mlp --train_shadow
 Example for Location (MLP):
 
 ```bash
-python main.py  --dataset_name location --attack_name apcmia --arch mlp --train_model --attack 
+python main.py  --dataset_name location --arch mlp --attack_name apcmia  --train_model --attack 
 ```
 The above command will first train target model then attack the model by setting `--attack` flag
 
@@ -68,7 +68,7 @@ The above command will first train target model then attack the model by setting
 Train the shadow models with DP-SGD:
 
 ```bash
-python main.py --dataset_name location --train_shadow --use_DP --noise 0.3 --norm 5 --delta 1e-5
+python main.py --dataset_name location --arch mlp --train_shadow --use_DP --noise 0.3 --norm 5 --delta 1e-5
 
 ```
 
@@ -77,7 +77,7 @@ python main.py --dataset_name location --train_shadow --use_DP --noise 0.3 --nor
 Train the target with DP-SGD and **Attack**:
 
 ```bash
-python main.py --dataset_name location --train_model --attack  --use_DP --noise 0.3 --norm 5 --delta 1e-5
+python main.py --dataset_name location --arch mlp --train_model --attack  --use_DP --noise 0.3 --norm 5 --delta 1e-5
 
 ```
 
@@ -116,7 +116,7 @@ You can run all attacks across:
 Example:
 
 ```bash
-python main.py  --dataset_name adult --attack_name apcmia --arch mlp --train_model --attack 
+python main.py  --dataset_name adult --arch mlp --attack_name apcmia  --train_model --attack 
 ```
 
 **Note:** Use `--arch mlp` for non-image datasets (Location, Adult, etc.) and `--arch cnn` / `--arch vgg16` for image-based datasets (CIFAR-10, CIFAR-100, STL10, etc.).
