@@ -526,43 +526,7 @@ def get_model_dataset(dataset_name, device, arch, attr, root):
         dataset = UTKFaceDataset(root=root, attr=attr, transform=transform)
         input_channel = 3
         
-    elif dataset_name.lower() == "celeba":
-        if isinstance(attr, list):
-            for a in attr:
-                if a != "attr":
-                    raise ValueError("Target type \"{}\" is not recognized.".format(a))
-
-                num_classes = [8, 4]
-                # heavyMakeup MouthSlightlyOpen Smiling, Male Young
-                attr_list = [[18, 21, 31], [20, 39]]
-        else:
-            if attr == "attr":
-                num_classes = 8
-                attr_list = [[18, 21, 31]]
-            else:
-                raise ValueError("Target type \"{}\" is not recognized.".format(attr))
-
-        transform = transforms.Compose([
-            transforms.RandomHorizontalFlip(),
-            transforms.Resize((64, 64)),
-            transforms.ToTensor(),
-            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
-        ])
-
-        dataset = CelebA(root=root, attr_list=attr_list, target_type=attr, transform=transform)
-        input_channel = 3
-
-
-        train_set = torchvision.datasets.CIFAR100(
-                root=root, train=True, transform=transform, download=True)
-        test_set = torchvision.datasets.CIFAR100(
-                root=root, train=False, transform=transform, download=True)
-
-        dataset = train_set + test_set
-        input_channel = 3
-        print(f"size of CIFAR100 dataset: {len(train_set), len(test_set), len(dataset)}")
-        # exit()
-
+   
 
     elif dataset_name.lower() == "stl10":
         num_classes = 10
@@ -633,29 +597,7 @@ def get_model_dataset(dataset_name, device, arch, attr, root):
     elif dataset_name.lower() == "country":
         
         print(f"country211")
-        
-        num_classes = 100
-
-        # Adjust the transformations as needed for your task.
-        transform = transforms.Compose([
-            transforms.Resize((64, 64)),  # Resize images to 256x256 pixels.
-            transforms.ToTensor(),          # Convert images to PyTorch tensors.
-            transforms.Normalize(mean=[0.485, 0.456, 0.406],  # Normalize with ImageNet means and stds.
-                                std=[0.229, 0.224, 0.225]),
-        ])
-
        
-
-        train_set = torchvision.datasets.Country211(root=root, split='train', transform=transform, download=True)
-        test_set = torchvision.datasets.Country211(root=root, split='test', transform=transform, download=True)
-        val_set = torchvision.datasets.Country211(root=root, split='valid', transform=transform, download=True)
-
-        print(len(train_set.classes)) 
-
-        dataset = train_set + test_set + val_set
-        input_channel = 3
-        print(f"size of country dataset: {len(train_set), len(test_set), len(val_set), len(dataset)}")
-        exit()
     
     elif dataset_name.lower() == "location":
         

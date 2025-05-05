@@ -1,16 +1,16 @@
 # apcMIA: Adaptive Perturbation-assisted Contrastive Membership Inference Attack
 
-This repository contains the official implementation of PyTorch-based implementation **apcMIA**, a fully differentiable membership inference attack framework designed to operate in black-box settings, especially effective against well-generalized and differentially private (DP-SGD-trained) models.
+This repository contains the official PyTorch implementation of **apcMIA**, a fully-differentiable membership inference attack framework designed to operate in black-box settings, especially effective against well-generalized and differentially-private (DP-SGD–trained) models.
 
 ---
 
 ## 🧠 Requirements
 
-- Python 3.8+
-- PyTorch
-- NumPy
-- scikit-learn
-- Matplotlib
+- Python 3.8+  
+- PyTorch  
+- NumPy  
+- scikit-learn  
+- Matplotlib  
 
 Install dependencies:
 
@@ -23,15 +23,18 @@ pip install -r requirements.txt
 ## 📁 Directory Structure
 
 ```
-data/                    # Contains sample datasets (adult, location)
-demoloader/              # Trained target/shadow models and attack artifacts
-results/                 # ROC curves, TPR-FPR, and entropy visualizations
-roc_curves/              # PDF/CSV results for each dataset
-threshold_plots/         # Threshold plots for CNN, MLP, VGG16
-main.py                  # Entry point to train models and launch attacks
-target_shadow_nn_models.py  # Model architectures and training logic
-meminf.py                # Attack logic for our MIA
-requirements.txt         # Python dependencies
+data/                    
+  ├─ adult/               # UCI “Census Income” (downloaded from https://archive.ics.uci.edu/dataset/2/adult)
+  └─ location/            # Foursquare check-in (from Shukri et al.’s PrivacyTrustLab repo: https://github.com/privacytrustlab/datasets)
+
+demoloader/               # Trained target/shadow models and attack artifacts  
+results/                  # ROC curves, TPR/FPR tables, and entropy visualizations  
+roc_curves/               # Saved ROC plots (PDF/CSV) per dataset & architecture  
+threshold_plots/          # Learned threshold visualizations  
+main.py                   # Entry point: train models and launch attacks  
+target_shadow_nn_models.py # Model architectures and training logic  
+meminf.py                 # Membership-inference attack implementations  
+requirements.txt          # Python dependency list  
 ```
 
 ---
@@ -40,7 +43,7 @@ requirements.txt         # Python dependencies
 
 ### 🔧 Train Shadow Models
 
-Example for Location (MLP):
+Example (MLP on Location):
 
 ```bash
 python main.py --dataset_name location --arch mlp --train_shadow
@@ -48,90 +51,122 @@ python main.py --dataset_name location --arch mlp --train_shadow
 
 ---
 
-### 🔧 Train Target and Test Our Attack Model
+### 🔧 Train Target + Run apcMIA Attack
 
-Example for Location (MLP):
+Example (MLP on Location):
 
 ```bash
-python main.py  --dataset_name location --arch mlp --attack_name apcmia  --train_model --attack 
+python main.py \
+  --dataset_name location \
+  --arch mlp \
+  --attack_name apcmia \
+  --train_model \
+  --attack
 ```
-The above command will first train target model then attack the model by setting `--attack` flag
 
----
-
-**Note:** if you want to plot the cluster results presented in the paper, you need to use `--apcmia_cluster` flag.
+> This will first train the target model, save its overfitting gap, then run the apcMIA attack.
 
 ---
 
 ### 🛡️ Attacking DP-Trained Models
 
-Train the shadow models with DP-SGD:
+Train shadow model with DP-SGD:
 
 ```bash
-python main.py --dataset_name location --arch mlp --train_shadow --use_DP --noise 0.3 --norm 5 --delta 1e-5
-
+python main.py \
+  --dataset_name location \
+  --arch mlp \
+  --train_shadow \
+  --use_DP \
+  --noise 0.3 \
+  --norm 5 \
+  --delta 1e-5
 ```
 
-
-
-Train the target with DP-SGD and **Attack**:
+Train target model with DP-SGD **and** attack:
 
 ```bash
-python main.py --dataset_name location --arch mlp --train_model --attack  --use_DP --noise 0.3 --norm 5 --delta 1e-5
-
+python main.py \
+  --dataset_name location \
+  --arch mlp \
+  --train_model \
+  --attack \
+  --use_DP \
+  --noise 0.3 \
+  --norm 5 \
+  --delta 1e-5
 ```
 
+> `--norm` is the clipping bound; adjust DP parameters to meet your privacy budget.
 
-Here `--norm` represents the clipping value. Adjust DP parameters as needed to fit the desired privacy budget.
+---
 
-
-### 📊 Plotting ROC and Threshold Curves
+### 📊 Plotting ROC & Threshold Curves
 
 ```bash
-python main.py --plot --plot_results roc --dataset_name location --arch mlp --attack_name apcmia
-python main.py --plot --plot_results th --dataset_name location --arch mlp --attack_name apcmia
+# ROC curves
+python main.py --plot --plot_results roc \
+  --dataset_name location --arch mlp --attack_name apcmia
+
+# Threshold curves
+python main.py --plot --plot_results th \
+  --dataset_name location --arch mlp --attack_name apcmia
 ```
+
+Add `--apcmia_cluster` to reproduce the clustering visualizations from the paper.
 
 ---
 
 ## 📚 Supported Datasets
 
-- Image datasets: CIFAR-10, CIFAR-100, STL10, FMNIST, UTKFace  
-- Non-image datasets: Purchase-100, Texas-100, Adult, Location
+- **Image datasets** (via `torchvision.datasets`):  
+  - **CIFAR-10**  
+  - **CIFAR-100**  
+  - **Fashion-MNIST (FMNIST)**  
+  - **STL-10**
 
-> ⚠️ **Note:** This repository provides only two example datasets — `adult` and `location` — in the `data/` directory for demonstration purposes.  
-To use other datasets (e.g., CIFAR-10, CIFAR-100, Purchase-100), please download them from their official sources as cited in the paper and place them in the corresponding folder under `data/`.  
-Refer to the dataset links in our article or supplementary material for details.
+- **Non-image datasets**:  
+  - **Location** (processed Foursquare check-ins; from Shukri et al., PrivacyTrustLab: https://github.com/privacytrustlab/datasets)  
+  - **Texas-100** (from the same PrivacyTrustLab repository)  
+  - **Adult** (UCI Census Income; downloaded from https://archive.ics.uci.edu/dataset/2/adult)  
+  - **Purchase-100** (also available via PrivacyTrustLab datasets)
+
+> ⚠️ **Note:** Only `adult/` and `location/` are included under `data/` for demonstration.  
+> For the other datasets, please download from the original sources (listed above) and place each into `data/{dataset_name}/` before running any commands.
 
 ---
 
 ## 📈 Attack Architectures
 
-You can run all attacks across:
+Run attacks with:
 
-- `--arch cnn`
-- `--arch mlp`
+- `--arch cnn`  
+- `--arch mlp`  
 - `--arch vgg16`
+
+Use `--arch mlp` for non-image datasets (Location, Adult, Purchase, Texas).  
+Use `--arch cnn` or `--arch vgg16` for image datasets (CIFAR-10, CIFAR-100, FMNIST, STL-10).
 
 Example:
 
 ```bash
-python main.py  --dataset_name adult --arch mlp --attack_name apcmia  --train_model --attack 
+python main.py \
+  --dataset_name adult \
+  --arch mlp \
+  --attack_name apcmia \
+  --train_model \
+  --attack
 ```
 
-**Note:** Use `--arch mlp` for non-image datasets (Location, Adult, etc.) and `--arch cnn` / `--arch vgg16` for image-based datasets (CIFAR-10, CIFAR-100, STL10, etc.).
-
 ---
 
-## 🧪 Evaluation
+## 🧪 Evaluation Outputs
 
-The framework automatically saves:
+By default, running `--attack` or `--plot` will save:
 
-- ROC curves
-- TPR/FPR tables
-- Learned thresholds
-- Attack prediction vectors
+- ROC curve plots (PDF) in `roc_curves/`  
+- TPR/FPR CSVs alongside the PDF  
+- Learned threshold curves in `threshold_plots/`  
+- Excel summaries (`.xlsx`) in `roc_curves/` when invoked  
 
-Check the `results/` and `roc_curves/` directories.
-
----
+Refer to the `results/` folder for additional logs and attack prediction vectors.
