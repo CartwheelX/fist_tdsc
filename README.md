@@ -56,11 +56,11 @@ python main.py --dataset_name location --arch mlp --train_shadow
 Example (MLP on Location):
 
 ```bash
-python main.py \
-  --dataset_name location \
-  --arch mlp \
-  --attack_name apcmia \
-  --train_model \
+python main.py 
+  --dataset_name location 
+  --arch mlp 
+  --attack_name apcmia 
+  --train_model 
   --attack
 ```
 
@@ -73,27 +73,27 @@ python main.py \
 Train shadow model with DP-SGD:
 
 ```bash
-python main.py \
-  --dataset_name location \
-  --arch mlp \
-  --train_shadow \
-  --use_DP \
-  --noise 0.3 \
-  --norm 5 \
+python main.py 
+  --dataset_name location 
+  --arch mlp 
+  --train_shadow 
+  --use_DP 
+  --noise 0.3 
+  --norm 5 
   --delta 1e-5
 ```
 
 Train target model with DP-SGD **and** attack:
 
 ```bash
-python main.py \
-  --dataset_name location \
-  --arch mlp \
-  --train_model \
-  --attack \
-  --use_DP \
-  --noise 0.3 \
-  --norm 5 \
+python main.py 
+  --dataset_name location 
+  --arch mlp 
+  --train_model 
+  --attack 
+  --use_DP 
+  --noise 0.3 
+  --norm 5 
   --delta 1e-5
 ```
 
@@ -105,11 +105,11 @@ python main.py \
 
 ```bash
 # ROC curves
-python main.py --plot --plot_results roc \
+python main.py --plot --plot_results roc 
   --dataset_name location --arch mlp --attack_name apcmia
 
 # Threshold curves
-python main.py --plot --plot_results th \
+python main.py --plot --plot_results th 
   --dataset_name location --arch mlp --attack_name apcmia
 ```
 
@@ -150,11 +150,11 @@ Use `--arch cnn` or `--arch vgg16` for image datasets (CIFAR-10, CIFAR-100, FMNI
 Example:
 
 ```bash
-python main.py \
-  --dataset_name adult \
-  --arch mlp \
-  --attack_name apcmia \
-  --train_model \
+python main.py 
+  --dataset_name adult 
+  --arch mlp 
+  --attack_name apcmia 
+  --train_model 
   --attack
 ```
 
