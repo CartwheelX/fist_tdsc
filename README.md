@@ -38,24 +38,26 @@ requirements.txt         # Python dependencies
 
 ## 🏃 Usage
 
-### 🔧 Train Target and Shadow Models
+### 🔧 Train Shadow Models
 
 Example for Location (MLP):
 
 ```bash
-python main.py --dataset_name location --arch mlp --train_model 
 python main.py --dataset_name location --arch mlp --train_shadow
 ```
 
 ---
 
-### 🚨 Train and Test Our Attack Model
+### 🔧 Train Target and Test Our Attack Model
 
-Run **apcMIA** attack (this command will train our attack and test it):
+Example for Location (MLP):
 
 ```bash
-python main.py --dataset_name location --attack --attack_name apcmia --arch mlp --apcmia_cluster
+python main.py  --dataset_name location --attack_name apcmia --arch mlp --train_model --attack 
 ```
+The above command will first train target model then attack the model by setting `--attack` flag
+
+---
 
 **Note:** if you want to plot the cluster results presented in the paper, you need to use `--apcmia_cluster` flag.
 
@@ -63,22 +65,25 @@ python main.py --dataset_name location --attack --attack_name apcmia --arch mlp 
 
 ### 🛡️ Attacking DP-Trained Models
 
-Train the target/shadow models with DP-SGD:
+Train the shadow models with DP-SGD:
 
 ```bash
-python main.py --dataset_name location --train_model --use_DP --noise 0.3 --norm 5 --delta 1e-5
 python main.py --dataset_name location --train_shadow --use_DP --noise 0.3 --norm 5 --delta 1e-5
+
 ```
+
+
+
+Train the target with DP-SGD and Attack the DP-SGD trained models:
+
+```bash
+python main.py --dataset_name location --train_model --attack  --use_DP --noise 0.3 --norm 5 --delta 1e-5
+
+```
+
 
 Here `--norm` represents the clipping value. Adjust DP parameters as needed to fit the desired privacy budget.
 
-Attack the DP-SGD trained models:
-
-```bash
-python main.py --dataset_name location --attack_name apcmia --arch mlp --apcmia_cluster
-```
-
----
 
 ### 📊 Plotting ROC and Threshold Curves
 
