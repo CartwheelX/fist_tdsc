@@ -303,7 +303,7 @@ def shadow_train_func(PATH, device, train_set, test_set, shadow_model, batch_siz
 
 
 
-def test_meminf(PATH, device, num_classes, target_train, target_test, batch_size,  target_model, mode, dataset_name, attack_name, entropy_dis_dr, apcmia_cluster, arch, acc_gap):
+def test_meminf(PATH, device, num_classes, target_train, target_test, batch_size,  target_model, shadow_model, mode, dataset_name, attack_name, entropy_dis_dr, apcmia_cluster, arch, acc_gap):
 
     if attack_name == "lira" or attack_name == "memia" or attack_name == "seqmia" or attack_name == "nsh" or attack_name == "apcmia" or attack_name == "mia" or attack_name == "m_lira":
         attack_trainloader, attack_testloader = get_attack_dataset(target_train, target_test, batch_size)
@@ -313,7 +313,7 @@ def test_meminf(PATH, device, num_classes, target_train, target_test, batch_size
         
         perturb_model = PerturbationModel(num_classes, device, hidden_dim=128, layer_dim=1, output_dim=1, batch_size=batch_size)
         
-        attack_mode0_com(PATH + "_target.pth", PATH, device, attack_trainloader, attack_testloader, target_model, attack_model, perturb_model, num_classes, mode, dataset_name, attack_name, entropy_dis_dr, apcmia_cluster, arch, acc_gap)
+        attack_mode0_com(PATH + "_target.pth", PATH, device, attack_trainloader, attack_testloader, target_model, shadow_model, attack_model, perturb_model, num_classes, mode, dataset_name, attack_name, entropy_dis_dr, apcmia_cluster, arch, acc_gap)
 
     else:
         raise Exception("Wrong attack name")
@@ -1388,6 +1388,7 @@ def main():
             target_test,
             batch_size,
             target_model,
+            shadow_model,
             mode,
             dataset_name,
             attack_name,

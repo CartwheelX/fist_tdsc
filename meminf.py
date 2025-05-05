@@ -47,7 +47,6 @@ def tic():
     # Records a time in TicToc, marks the beginning of a time interval
     toc(False)  # The first call to toc() after this will measure from here
 
-
 def weights_init(m):
     if isinstance(m, nn.Conv2d):
         nn.init.normal_(m.weight.data)
@@ -55,7 +54,6 @@ def weights_init(m):
     elif isinstance(m,nn.Linear):
         nn.init.xavier_normal_(m.weight)
         nn.init.constant_(m.bias, 0)
-
     
 class target_train_class():
     def __init__(self, trainloader, testloader, dataset_name, model, device, use_DP, noise, norm, delta, arch):
@@ -399,9 +397,7 @@ class shadow_train_class():
             print( 'Test Acc: %.3f%% (%d/%d)' % (100.*correct/total, correct, total))
 
         return 1.*correct/total
-
-            
-
+          
 def get_acc_gap(MODEL_SAVE_PATH):
     
     pattern = MODEL_SAVE_PATH + "_accs_*.csv"
@@ -446,9 +442,8 @@ def sigmoid_adaptive_lr(gap, mid_gap=0.45, gap_range=0.65, max_lr=0.1, min_lr=0.
     sigmoid = 1 / (1 + np.exp(-k * (gap - mid_gap)))
     return min_lr + (max_lr - min_lr) * sigmoid
 
-# attack_for_blackbox_com(TARGET_PATH, ATTACK_SETS,ATTACK_SETS_PV_CSV, attack_trainloader, attack_testloader, target_model, attack_model,perturb_model,  device)
 class attack_for_blackbox_com_NEW():
-    def __init__(self,TARGET_PATH, Perturb_MODELS_PATH, ATTACK_SETS,ATTACK_SETS_PV_CSV, attack_train_loader, attack_test_loader, target_model, attack_model, perturb_model, device, dataset_name, attack_name, num_classes, acc_gap):
+    def __init__(self,TARGET_PATH, Perturb_MODELS_PATH, ATTACK_SETS,ATTACK_SETS_PV_CSV, attack_train_loader, attack_test_loader, target_model,shadow_model,  attack_model, perturb_model, device, dataset_name, attack_name, num_classes, acc_gap):
         self.device = device
 
         self.TARGET_PATH = TARGET_PATH
@@ -457,18 +452,17 @@ class attack_for_blackbox_com_NEW():
         self.ATTACK_SETS_PV_CSV = ATTACK_SETS_PV_CSV
         
         self.target_model = target_model.to(self.device)
-        # self.shadow_model = shadow_model.to(self.device)
+        self.shadow_model = shadow_model.to(self.device)
         self.Perturb_MODELS_PATH = Perturb_MODELS_PATH
         self.attack_name = attack_name
         print( 'self.TARGET_PATH: %s' % self.TARGET_PATH)
-        # exit()
-        # self.pred_component_model = pred_component_model
+    
         self.num_classes = num_classes
         self.target_model.load_state_dict(torch.load(self.TARGET_PATH, weights_only=True))
-        # self.shadow_model.load_state_dict(torch.load(self.SHADOW_PATH, weights_only=True))
+        self.shadow_model.load_state_dict(torch.load(self.SHADOW_PATH, weights_only=True))
 
         self.target_model.eval()
-        # self.shadow_model.eval()
+        self.shadow_model.eval()
         self.member_mean = 0.0
         self.member_std = 0.0
         self.non_member_mean = 0.0
@@ -481,12 +475,11 @@ class attack_for_blackbox_com_NEW():
         self.perturb_model = perturb_model.to(self.device)
         self.patience = 20
         self.early_stopping = EarlyStopping(self.patience, verbose=True)
-        # torch.manual_seed(0)
+    
         self.attack_model.apply(weights_init)
         self.perturb_model.apply(weights_init)
   
         self.criterion = nn.CrossEntropyLoss()
-        # fff
         self.optimizer = optim.Adam(self.attack_model.parameters(), lr=1e-3)
         self.optimizer_perturb = optim.Adam(self.perturb_model.parameters(), lr=1e-3) # need to change the learning rate to see the effect latter
         
@@ -512,8 +505,6 @@ class attack_for_blackbox_com_NEW():
     
         if dataset_name == "fmnist" or dataset_name == "cifar10" or dataset_name == "utkface":
             self.k1 = 1000000.0
-            # self.k1 = 10.0
-
         else:
             self.k1 = 10.0
 
@@ -529,7 +520,7 @@ class attack_for_blackbox_com_NEW():
             self.k1 = 100.0
         if dataset_name == "purchase":
             self.k = 1000000.0
-            self.k1 = 100.0 # was 10.0
+            self.k1 = 100.0 
         
 
         # Image datasets
@@ -593,15 +584,10 @@ class attack_for_blackbox_com_NEW():
         self.kl_threshold = torch.nn.Parameter(torch.tensor(0.5))
         kl_lr = 0.01
         self.optimizer_kl = torch.optim.Adam([self.kl_threshold], kl_lr)
-
-     
-
-    
+ 
     def _get_data(self, model, inputs, targets):
         
         result = model(inputs)
-        # output, _ = torch.sort(result, descending=True) 
-        # results = F.softmax(results[:,:5], dim=1)
         output = F.softmax(result, dim=1)
         _, predicts = result.max(1)
 
@@ -618,13 +604,11 @@ class attack_for_blackbox_com_NEW():
         # Save train dataset to CSV
         with open(self.ATTACK_SETS_PV_CSV, "w", newline='') as f:
             writer = csv.writer(f)
-            # Write the header row (optional)
-            # Write the header row (optional, adjust depending on the number of output dimensions)
+           
             num_output_classes = 10  # Assuming output size is [batch_size, num_classes]
             header = ["Output_" + str(i) for i in range(num_output_classes)] + ["Prediction", "Members", "Targets"]
             writer.writerow(header)
-            
-            # writer.writerow(["Output", "Prediction", "Members", "Targets"])
+           
             
             for inputs, targets, members in self.attack_train_loader:
                 inputs, targets = inputs.to(self.device), targets.to(self.device)
@@ -642,9 +626,7 @@ class attack_for_blackbox_com_NEW():
                         writer.writerow(row)
 
         print("Finished Saving Train Dataset")
-
-
-    
+ 
     def prepare_dataset(self):
         print("Preparing dataset")
         with open(self.ATTACK_SETS + "train.p", "wb") as f:
@@ -686,152 +668,7 @@ class attack_for_blackbox_com_NEW():
         print("Finished Saving Test Dataset")
         return self.dataset
        
-        
-    def prepare_dataset_mul(self, num_classes):
-
-        batch_size = 8
-       
-    
-        #! Traing Data class buckets 
-        with torch.no_grad():
-            counter=0
-            print(f"classes: {num_classes}")
-            for class_name in range(num_classes):
-                # class_name = 29
-                output_coll =  torch.empty((0, num_classes))
-                predictions_coll = torch.empty((0, 1))
-                members_coll = torch.empty((0, 1))
-                targets_Coll = torch.empty((0, 1))
-            
-                file_path = self.ATTACK_SETS + f"_train_{class_name}.p"
-                # print(f"new path: {file_path}")
-                
-                counter = 0
-                with open(file_path, "wb") as f:
-                    # This loop will iterate over all batches and put samples in their corresponding class file
-                    for inputs, targets, members in self.attack_train_loader:
-                        inputs, targets = inputs.to(self.device), targets.to(self.device)
-                        if 32 == 32:
-                            counter+=1
-                            # Assuming _get_data returns output and prediction based on the class
-                            output, prediction = self._get_data(self.shadow_model, inputs, targets)
-                            
-                            output, prediction, targets  = output.cpu(), prediction.cpu(), targets.cpu()
-                            
-                         
-                            indices = torch.where(targets == class_name)[0]
-                           
-                            output_coll = torch.vstack((output_coll, output[indices]))
-                            # print(f"output_coll: {output_coll.size()}")
-                            predictions_coll = torch.vstack((predictions_coll, prediction[indices]))
-                           
-                            targets_Coll = torch.vstack((targets_Coll, targets[indices].unsqueeze(1)))
-                            members_coll = torch.vstack((members_coll, members[indices].unsqueeze(1)))
-                            
-                            
-                            
-                        
-                            
-                        else:
-                            print("skipping: ", inputs.size()[0])
-                        
-                        del inputs
-                        del targets
-                        torch.cuda.empty_cache()
-                    
-                    
-            
-                    
-                    attack_train = []
-                    for i in range(output_coll.size()[0]):
-                        attack_train.append((output_coll[i], predictions_coll[i].item(), members_coll[i].item(), targets_Coll[i].item()))
-                        
-                    
-                    
-                    # get track of the dimension of the dataset and append for later use
-                    attack_trainloader = torch.utils.data.DataLoader(attack_train, batch_size=batch_size, shuffle=True, num_workers=1, persistent_workers=True)
-                    for output_coll, predictions_coll, members_coll, targets_Coll  in attack_trainloader:
-                        # print(f"len of batch output_coll: {len(output_coll)}, and size: {output_coll.shape}")
-                        if output_coll.size()[0] == batch_size:
-                            pickle.dump((output_coll, predictions_coll, members_coll, targets_Coll), f)
-                        # output, prediction, members = pickle.load(f)
-                        else:
-                            print(f"skipping the last {output_coll.size()[0]} samples")
-                     
-            #     exit()
-            # exit()
-        print(f"Finished Saving {num_classes} Train Dataset")   
-            
-            
-        
-        #! Test Data class buckets 
-        with torch.no_grad():
-            counter=0
-            print(f"classes: {num_classes}")
-            for class_name in range(num_classes):
-                output_coll =  torch.empty((0, num_classes))
-                predictions_coll = torch.empty((0, 1))
-                members_coll = torch.empty((0, 1))
-                targets_Coll = torch.empty((0, 1))
-            
-                file_path = self.ATTACK_SETS + f"_test_{class_name}.p"
-                # print(f"new path: {file_path}")
-                
-                counter = 0
-            
-                with open(file_path, "wb") as f:
-                    for inputs, targets, members in self.attack_test_loader:
-                        inputs, targets = inputs.to(self.device), targets.to(self.device)
-                        
-                        if 32 == 32:
-                            counter+=1
-                            output, prediction = self._get_data(self.target_model, inputs, targets)
-                            
-                            output, prediction, targets  = output.cpu(), prediction.cpu(), targets.cpu()
-                            indices = torch.where(targets == class_name)[0]
-                           
-                            output_coll = torch.vstack((output_coll, output[indices]))
-                            # print(f"output_coll: {output_coll.size()}")
-                            predictions_coll = torch.vstack((predictions_coll, prediction[indices]))
-                            # print(f"targets_Coll size: {targets_Coll.size()}, targets size: {targets[indices].unsqueeze(1).size()}")
-                            targets_Coll = torch.vstack((targets_Coll, targets[indices].unsqueeze(1)))
-                            members_coll = torch.vstack((members_coll, members[indices].unsqueeze(1)))
-                            
-                            # pickle.dump((output, prediction, members), f)
-                        else:
-                            print("test data skipping: ",inputs.size()[0])
-                        
-                        del inputs
-                        del targets
-                        torch.cuda.empty_cache()
-                    
-                   
-                   
-                          
-                   
-                    attack_train = []
-                    for i in range(output_coll.size()[0]):
-                        attack_train.append((output_coll[i], predictions_coll[i].item(), members_coll[i].item(), targets_Coll[i].item()))
-                        
-                  
-                    
-                    # get track of the dimension of the dataset and append for later use
-                    attack_testloader = torch.utils.data.DataLoader(attack_train, batch_size=batch_size, shuffle=True, num_workers=1, persistent_workers=True)
-                    for output_coll, predictions_coll, members_coll, targets_Coll  in attack_testloader:
-                        # print(f"len of batch output_coll: {len(output_coll)}, and size: {output_coll.shape}")
-                        if output_coll.size()[0] == batch_size:
-                            pickle.dump((output_coll, predictions_coll, members_coll, targets_Coll), f)
-                        # output, prediction, members = pickle.load(f)
-                        else:
-                            print(f"skipping the last {output_coll.size()[0]} samples")
-                        
-                
-         
-        print(f"Finished Saving {num_classes} Test Dataset")   
-        # exit()
-
-
-
+ 
     def contrastive_loss(self, embeddings, labels, margin):
         """
         A simple contrastive loss function.
@@ -873,7 +710,7 @@ class attack_for_blackbox_com_NEW():
         return loss_same + loss_diff
 
     # -------------------------
-    # Modified Training Function
+    # Training Function
     # -------------------------
     def train(self, epoch, result_path, result_path_csv, mode):
         self.attack_model.train()
@@ -1036,7 +873,10 @@ class attack_for_blackbox_com_NEW():
             print(f"CosineT: {cos_thre:.4f}, Quantile Threshold: {ent_thre:.4f}")
      
         return cos_thre, ent_thre
-
+    
+    # -------------------------
+    # Test Function
+    # -------------------------
     def test(self, epoch_flag, result_path, mode):
         self.attack_model.eval()
         self.perturb_model.eval()
@@ -1329,7 +1169,6 @@ class attack_for_blackbox_com_NEW():
         print(f"KL Threshold: {self.kl_threshold.item():.4f}, Quantile Threshold: {self.Entropy_quantile_threshold.item():.4f}")
 
         return self.kl_threshold.item(), self.Entropy_quantile_threshold.item()
-    
 
     def train_ecld(self, epoch, result_path, result_path_csv, mode): 
         
@@ -1485,10 +1324,6 @@ class attack_for_blackbox_com_NEW():
 
         return self.cosine_threshold.item(), self.Entropy_quantile_threshold.item()
 
-
-  
-    
-    
     def test_KL(self, epoch_flag, result_path, mode):
         self.attack_model.eval()
         self.perturb_model.eval()
@@ -1740,7 +1575,6 @@ class attack_for_blackbox_com_NEW():
             f"precision: {100.*prec/(1.0*batch_idx):.3f}, recall: {100.*recall/batch_idx:.3f}")
 
         return final_result, fpr, tpr
-
 
     def train_pearson(self, epoch, result_path, result_path_csv, mode): 
         self.attack_model.train()
@@ -2022,7 +1856,6 @@ class attack_for_blackbox_com_NEW():
 
         return final_result, fpr, tpr
 
-
     def train_mahalanobis(self, epoch, result_path, result_path_csv, mode): 
         self.attack_model.train()
         self.perturb_model.train()
@@ -2173,7 +2006,6 @@ class attack_for_blackbox_com_NEW():
             f"Quantile Threshold: {torch.sigmoid(self.Entropy_quantile_threshold).item():.4f}")
 
         return self.cosine_threshold.item(), self.Entropy_quantile_threshold.item()
-    
 
     def test_mahalanobis(self, epoch_flag, result_path, mode):
         self.attack_model.eval()
@@ -2310,6 +2142,7 @@ class attack_for_blackbox_com_NEW():
             f"Precision: {100.*prec/batch_idx:.3f}, Recall: {100.*recall/batch_idx:.3f}")
 
         return final_result, fpr, tpr
+    
     def test_saved_model_apcmia(self, atk_model, prt_model, consin_thr, entrp_thr):
         
         # checkpoint = torch.load(models_path, map_location=self.device, weights_only=True)
@@ -2562,6 +2395,7 @@ class attack_for_blackbox_com_NEW():
         print(f"Final: Test Acc: {100.*correct/(1.0*total):.3f}% ({correct}/{total}), Loss: {avg_test_loss:.3f}, precision: {100.*prec/(1.0*batch_idx):.3f}, recall: {100.*recall/batch_idx:.3f}")
 
         return final_result
+   
     def compute_roc_curve_rest(self, model):
         
         # checkpoint = torch.load(models_apth, map_location=self.device, weights_only=True)
@@ -2992,8 +2826,6 @@ class attack_for_blackbox_com_NEW():
                 np.array(members_pert_list),
                 np.array(nonmembers_pert_list))
 
-
-    # def approximate_perturbation_distribution(self, loader):
     def approximate_perturbation_distribution(self):
         """
         Load all samples from self.ATTACK_SETS + "train.p" and separate them by membership.
@@ -3035,7 +2867,6 @@ class attack_for_blackbox_com_NEW():
             non_member_mean, non_member_std = None, None
 
         return member_mean, member_std, non_member_mean, non_member_std
-    
     
     def compute_entropy_distribution(self, atk_model, prt_model, consin_thr, entrp_thr, entropy_dis_dr):
         """
@@ -3247,7 +3078,6 @@ class attack_for_blackbox_com_NEW():
                 
         return original_entropies, perturbed_entropies
     
-
     def compute_entropy_distribution_new(self, atk_model, prt_model, consin_thr, entrp_thr, entropy_dis_dr):
         """
         Computes and (optionally) plots the entropy distribution of the probability vectors (PVs)
@@ -3427,6 +3257,7 @@ class attack_for_blackbox_com_NEW():
         # return original_members, original_nonmembers, pert_members, pert_nonmembers
 
         # return original_entropies, perturbed_entropies
+   
     def compute_entropy_distribution_new_norm(self, atk_model, prt_model, consin_thr, entrp_thr, entropy_dis_dr):
         """
         Computes and (optionally) plots the entropy distribution of the probability vectors (PVs)
@@ -3612,7 +3443,6 @@ class attack_for_blackbox_com_NEW():
 
         print(f"Saved entropy distribution plot to {output_path}")
        
-
     def compute_cosine_similarity_distribution(self, checkpoint_path, dataset="test", plot=True, save_path=None):
         """
         Loads the saved models and learned thresholds from checkpoint, then computes the cosine
@@ -3758,8 +3588,7 @@ class attack_for_blackbox_com_NEW():
             plt.show()
 
         return member_similarities, non_member_similarities
-
-            
+     
     def delete_pickle(self):
         train_file = glob.glob(self.ATTACK_SETS +"train.p")
         for trf in train_file:
@@ -3774,7 +3603,7 @@ class attack_for_blackbox_com_NEW():
     
     def save_pertub_Model(self, path):
         torch.save(self.perturb_model.state_dict(), self.Perturb_MODELS_PATH)
-    # chch
+    
     def save_att_per_thresholds_models(self, last_checkpoint, path):
 
         checkpoint = torch.load(last_checkpoint, weights_only=True)
@@ -3796,7 +3625,6 @@ class attack_for_blackbox_com_NEW():
         self.perturb_model.eval()  # Set the generator to evaluation mode
         return self.perturb_model
 
-  
     def visualize_transformed_pvs_classwise(self, target_class, atk_model, prt_model, consin_thr, entrp_thr, sub_folder):
        
         self.attack_model = atk_model
@@ -4050,136 +3878,6 @@ class attack_for_blackbox_com_NEW():
         plt.close()
         # plt.show()
     
-
-    # lira
-    def liRA_offline(self):
-        
-        
-        
-
-        # Question? does the loaders have both members and non-members
-        #  yes, 
-        # self.attack_train_loader # Contains raw samples (made loader) used to train the target model
-        # self.attack_test_loader #  Contains raw samples (made loader) used to test the target model,
-        # also called target samples, these are used to obtain test PVs to test attack model
-        
-        # here the test.p contains conf_ob: confobs = (f(x)y)
-        # train is the confs of target model that did see target point (x,y), in this case its in test_loader
-        from scipy.stats import norm
-
-        outputs_list = []
-        members_list = []
-        targets_list = []
-
-        # Load data from the saved file (train.p)
-        with torch.no_grad():
-            with open(self.ATTACK_SETS + "train.p", "rb") as f:
-                while True:
-                    try:
-                        output, prediction, members, targets = pickle.load(f)
-                    except EOFError:
-                        break
-                    outputs_list.append(output.cpu())    # output: [batch, num_classes]
-                    members_list.append(members.cpu())     # membership flag, e.g. 1 for member, 0 for non-member
-                    targets_list.append(targets.cpu())     # true labels for each sample
-
-        # Concatenate batches to get one tensor per item.
-        all_outputs = torch.cat(outputs_list, dim=0)   # shape: (total_samples, num_classes)
-        all_members = torch.cat(members_list, dim=0)     # shape: (total_samples,)
-        all_targets = torch.cat(targets_list, dim=0)     # shape: (total_samples,)
-
-        
-       
-        out_signals = all_outputs     # non-members (out)
-        
-        
-        mean_out = np.median(out_signals.numpy(), 1).reshape(-1, 1)
-
-       
-        std_out = np.std(out_signals.numpy(), 1).reshape(-1, 1)
-
-        print("Estimated distribution parameters:")
-        # print("Mean In-Signal:", mean_in)
-        print("Mean Out-Signal:", mean_out)
-        # print("Std In-Signal:", std_in)
-        print("Std Out-Signal:", std_out)
-        # exit()
-        # Now, for each sample, compute the negative log-likelihood under the two distributions.
-        # Here, sc (signal observed) is the correct confidence for each sample.
-        
-        outputs_test_list = []
-        members_test_list = []
-        targets_test_list = []
-
-        # Load data from the saved file (test.p)
-        with torch.no_grad():
-            with open(self.ATTACK_SETS + "test.p", "rb") as f:
-                while True:
-                    try:
-                        output, prediction, members, targets = pickle.load(f)
-                    except EOFError:
-                        break
-                    outputs_test_list.append(output.cpu())    # output: [batch, num_classes]
-                    members_test_list.append(members.cpu())     # membership flag, e.g. 1 for member, 0 for non-member
-                    targets_test_list.append(targets.cpu())     # true labels for each sample
-
-        # Concatenate batches to get one tensor per item.
-        all_outputs_test = torch.cat(outputs_test_list, dim=0)   # shape: (total_samples, num_classes)
-        all_members_test = torch.cat(members_test_list, dim=0)     # shape: (total_samples,)
-        all_targets_test = torch.cat(targets_test_list, dim=0)     # shape: (total_samples,)
-
-        # print("Loaded data from test.p:")
-        # print(f"Outputs shape: {all_outputs_test.shape}")
-        # print(f"Members shape: {all_members_test.shape}")
-        # print(f"Targets shape: {all_targets_test.shape}")
-
-        # exit()
-        sc = all_outputs_test
-
-        # mean_out = np.median(out_signals, 1).reshape(-1, 1)
-        
-        
-        # std_out = np.std(out_signals, 1).reshape(-1, 1)
-
-        # If running in "offline" mode, you might choose to ignore the in-part
-        # (i.e., set pr_in=0) and only use the out-distribution.
-        
-
-        # print(f"Shape of all_outputs_test: {all_outputs_test.shape}")
-        # print(f"Shape of mean_out: {mean_out.shape}")
-        # print(f"Shape of std_out: {std_out.shape}")
-        # exit()
-        prediction = []
-        answers = []
-
-      
-        pr_in = 0
-        
-        pr_out = -norm.logpdf(all_outputs_test, mean_out, std_out + 1e-30) # gaussian approximation
-        score = pr_in - pr_out
-
-        prediction = np.array(score.mean(1))
-
-        # prediction_2 = np.array(score.mean(1))
-        prediction_2 = np.where(-score.mean(1) >= 0, 1, 0)
-        
-        answers = np.array(all_members_test.reshape(-1, 1), dtype=bool)
-        fpr_list, tpr_list, thresholds = roc_curve(answers.ravel(), (-prediction).ravel())
-        auc_score = auc(fpr_list, tpr_list)
-        # bcm = BinaryConfusionMatrix().to(self.device)
-        # conf_mat = bcm((-prediction).ravel(), all_members_test.ravel())
-        
-
-       
-
-        acc = np.max(1 - (fpr_list + (1 - tpr_list)) / 2)
-        
-        recall = np.max(tpr_list)
-        print(f"acc: {acc}, recall: {recall:.3f}")
-       
-        return fpr_list, tpr_list, thresholds, auc_score
-
-
     def metric_results(fpr_list, tpr_list, thresholds):
         fprs = [0.01,0.001,0.0001,0.00001,0.0] # 1%, 0.1%, 0.01%, 0.001%, 0%
         tpr_dict = {}
@@ -4251,9 +3949,6 @@ def get_attack_dataset_with_shadow(target_train, target_test, shadow_train, shad
 
     return attack_trainloader, attack_testloader
 
-
-
-
 def dataloader_to_dataset(dataloader):
     data_list = []
     
@@ -4277,8 +3972,7 @@ def save_best_checkpoint(val_loss, attack_model, perturb_model, cosine_threshold
     torch.save(checkpoint, checkpoint_path)
     print(f"Checkpoint saved to {checkpoint_path}")
 
-
-def attack_mode0_com(TARGET_PATH, ATTACK_PATH, device, attack_trainloader, attack_testloader, target_model, attack_model, perturb_model, num_classes, mode, dataset_name, attack_name, entropy_dis_dr, apcmia_cluster, arch, acc_gap):
+def attack_mode0_com(TARGET_PATH, ATTACK_PATH, device, attack_trainloader, attack_testloader, target_model, shadow_model, attack_model, perturb_model, num_classes, mode, dataset_name, attack_name, entropy_dis_dr, apcmia_cluster, arch, acc_gap):
     MODELS_PATH = ATTACK_PATH + "_meminf_"+attack_name+"_.pth"
     Perturb_MODELS_PATH = ATTACK_PATH + "_perturb_model.pth"
 
@@ -4305,7 +3999,7 @@ def attack_mode0_com(TARGET_PATH, ATTACK_PATH, device, attack_trainloader, attac
     
     
         
-    attack = attack_for_blackbox_com_NEW(TARGET_PATH, Perturb_MODELS_PATH, ATTACK_SETS,ATTACK_SETS_PV_CSV, attack_trainloader, attack_testloader, target_model, attack_model,perturb_model, device, dataset_name, attack_name, num_classes, acc_gap)
+    attack = attack_for_blackbox_com_NEW(TARGET_PATH, Perturb_MODELS_PATH, ATTACK_SETS,ATTACK_SETS_PV_CSV, attack_trainloader, attack_testloader, target_model, shadow_model, attack_model,perturb_model, device, dataset_name, attack_name, num_classes, acc_gap)
            
     if 1:
         
@@ -4318,9 +4012,7 @@ def attack_mode0_com(TARGET_PATH, ATTACK_PATH, device, attack_trainloader, attac
    
         
         epochs = 100
-        tr_sum = 0.0;
-        ts_sum = 0.0;
-
+       
         checkpoint_files = []  # List to store unique checkpoint filenames
         res_list = []  # store final test metrics per epoch
 
@@ -4358,7 +4050,7 @@ def attack_mode0_com(TARGET_PATH, ATTACK_PATH, device, attack_trainloader, attac
                             'cosine_threshold': current_cosine_threshold,
                             'entropy_threshold': current_entropy_threshold})
 
-            # heyyyyy
+            
             early_stopping(res_test[-1], attack.attack_model)
 
             # Suppose early_stopping has an attribute best_loss that is updated when improvement occurs:
