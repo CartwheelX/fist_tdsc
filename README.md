@@ -56,12 +56,7 @@ python main.py --dataset_name location --arch mlp --train_shadow
 Example (MLP on Location):
 
 ```bash
-python main.py 
-  --dataset_name location 
-  --arch mlp 
-  --attack_name apcmia 
-  --train_model 
-  --attack
+python main.py --dataset_name location --arch mlp --attack_name apcmia --train_model --attack
 ```
 
 > This will first train the target model, save its overfitting gap, then run the apcMIA attack.
@@ -86,15 +81,7 @@ python main.py
 Train target model with DP-SGD **and** attack:
 
 ```bash
-python main.py 
-  --dataset_name location 
-  --arch mlp 
-  --train_model 
-  --attack 
-  --use_DP 
-  --noise 0.3 
-  --norm 5 
-  --delta 1e-5
+python main.py --dataset_name location --arch mlp --attack_name apcmia --train_model --attack
 ```
 
 > `--norm` is the clipping bound; adjust DP parameters to meet your privacy budget.
@@ -105,12 +92,10 @@ python main.py
 
 ```bash
 # ROC curves
-python main.py --plot --plot_results roc 
-  --dataset_name location --arch mlp --attack_name apcmia
+python main.py --plot --plot_results roc --dataset_name location --arch mlp --attack_name apcmia
 
 # Threshold curves
-python main.py --plot --plot_results th 
-  --dataset_name location --arch mlp --attack_name apcmia
+python main.py --plot --plot_results th --dataset_name location --arch mlp --attack_name apcmia
 ```
 
 Add `--apcmia_cluster` to reproduce the clustering visualizations from the paper.
@@ -150,12 +135,7 @@ Use `--arch cnn` or `--arch vgg16` for image datasets (CIFAR-10, CIFAR-100, FMNI
 Example:
 
 ```bash
-python main.py 
-  --dataset_name adult 
-  --arch mlp 
-  --attack_name apcmia 
-  --train_model 
-  --attack
+python main.py --dataset_name adult --arch mlp --attack_name apcmia --train_model --attack
 ```
 
 ---
