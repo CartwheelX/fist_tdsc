@@ -130,9 +130,3 @@ The framework automatically saves:
 Check the `results/` and `roc_curves/` directories.
 
 ---
-
-<!-- ## 📄 Citation
-
-If you use this code, please cite our work:
-
-> "apcMIA: Adaptive Perturbation-based Contrastive Membership Inference Attacks." ACM CCS 2025 (under review). -->
