@@ -68,14 +68,7 @@ python main.py --dataset_name location --arch mlp --attack_name apcmia --train_m
 Train shadow model with DP-SGD:
 
 ```bash
-python main.py 
-  --dataset_name location 
-  --arch mlp 
-  --train_shadow 
-  --use_DP 
-  --noise 0.3 
-  --norm 5 
-  --delta 1e-5
+python main.py --dataset_name location  --arch mlp  --train_shadow  --use_DP  --noise 0.3  --norm 5  --delta 1e-5
 ```
 
 Train target model with DP-SGD **and** attack:
