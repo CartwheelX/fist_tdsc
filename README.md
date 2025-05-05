@@ -54,7 +54,7 @@ python main.py --dataset_name location --arch mlp --train_shadow
 Run **apcMIA** attack (this command will train our attack and test it):
 
 ```bash
-python main.py --dataset_name location --attack_name apcmia --arch mlp --apcmia_cluster
+python main.py --dataset_name location --attack --attack_name apcmia --arch mlp --apcmia_cluster
 ```
 
 **Note:** if you want to plot the cluster results presented in the paper, you need to use `--apcmia_cluster` flag.
@@ -111,7 +111,7 @@ You can run all attacks across:
 Example:
 
 ```bash
-python main.py --dataset_name adult --attack_name apcmia --arch mlp --apcmia_cluster
+python main.py --dataset_name adult --attack --attack_name apcmia --arch mlp --apcmia_cluster
 ```
 
 **Note:** Use `--arch mlp` for non-image datasets (Location, Adult, etc.) and `--arch cnn` / `--arch vgg16` for image-based datasets (CIFAR-10, CIFAR-100, STL10, etc.).
