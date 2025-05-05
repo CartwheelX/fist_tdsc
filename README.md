@@ -116,7 +116,7 @@ You can run all attacks across:
 Example:
 
 ```bash
-python main.py --dataset_name adult --attack --attack_name apcmia --arch mlp --apcmia_cluster
+python main.py  --dataset_name adult --attack_name apcmia --arch mlp --train_model --attack 
 ```
 
 **Note:** Use `--arch mlp` for non-image datasets (Location, Adult, etc.) and `--arch cnn` / `--arch vgg16` for image-based datasets (CIFAR-10, CIFAR-100, STL10, etc.).
