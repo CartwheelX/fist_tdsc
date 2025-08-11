@@ -143,15 +143,3 @@ When running `--attack` or `--plot`, the following are saved:
 
 ---
 
-## 📄 Citation
-
-If you use FiST in your research, please cite:
-
-```bibtex
-@article{FiST2025,
-  title     = {Fitting In to Stand Out: Contrastive Membership Inference Attacks via Learned Adversarial Perturbations},
-  author    = {Your Name and Coauthors},
-  journal   = {Under Review},
-  year      = {2025}
-}
-```
