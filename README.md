@@ -1,4 +1,4 @@
-# Fitting In to Stand Out: Contrastive Membership Inference Attacks via Learned Adversarial Perturbations
+# Fitting In to Standout: Contrastive Membership Inference Attacks via Learned Adversarial Perturbations
 
 This repository contains the official PyTorch implementation of **FiST**, a fully differentiable membership inference attack framework for black-box settings.  
 During training, FiST’s perturbation model is **fit exclusively on a selected subset of non-member prediction vectors**—those that both closely resemble members in the target model’s output space (high cosine similarity) and exhibit high uncertainty (high entropy). By perturbing only these ambiguous non-members, FiST amplifies the contrast between member and non-member outputs while preserving realistic prediction distributions.  
