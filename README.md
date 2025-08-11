@@ -1,12 +1,13 @@
-# apcMIA: Adaptive Perturbation-assisted Contrastive Membership Inference Attack
+# Fitting In to Stand Out: Contrastive Membership Inference Attacks via Learned Adversarial Perturbations
 
-This repository contains the official PyTorch implementation of **apcMIA**, a fully-differentiable membership inference attack framework designed to operate in black-box settings, especially effective against well-generalized and differentially-private (DP-SGD–trained) models.
+This repository contains the official PyTorch implementation of **FiST**, a fully differentiable membership inference attack framework that learns **adversarial perturbations** to make non-member samples “fit in” with members during training.  
+By applying these perturbations uniformly at inference, FiST induces asymmetric responses between members and non-members, enabling the attack model to exploit **contrastive signals** (via cosine similarity and entropy) for highly accurate membership inference — even in **strict black-box** and **differentially-private (DP-SGD–trained)** settings.
 
 ---
 
-## 🧠 Requirements
+## 📦 Requirements
 
-- Python 3.8+  
+- Python ≥ 3.8  
 - PyTorch  
 - NumPy  
 - scikit-learn  
@@ -20,28 +21,28 @@ pip install -r requirements.txt
 
 ---
 
-## 📁 Directory Structure
+## 📂 Project Structure
 
 ```
 data/                    
-  ├─ adult/               # UCI “Census Income” (downloaded from https://archive.ics.uci.edu/dataset/2/adult)
-  └─ location/            # Foursquare check-in (from Shukri et al.’s PrivacyTrustLab repo: https://github.com/privacytrustlab/datasets)
+  ├─ adult/               # UCI Census Income
+  └─ location/            # Foursquare check-in dataset (Shukri et al.)
 
-demoloader/               # Trained target/shadow models and attack artifacts  
-results/                  # ROC curves, TPR/FPR tables, and entropy visualizations  
+demoloader/               # Pretrained target/shadow models and attack artifacts  
+results/                  # Evaluation logs and metrics  
 roc_curves/               # Saved ROC plots (PDF/CSV) per dataset & architecture  
 threshold_plots/          # Learned threshold visualizations  
-main.py                   # Entry point: train models and launch attacks  
-target_shadow_nn_models.py # Model architectures and training logic  
-meminf.py                 # Membership-inference attack implementations  
-requirements.txt          # Python dependency list  
+main.py                   # Main script: training + attack pipeline  
+target_shadow_nn_models.py # Model architectures and training  
+meminf.py                 # Membership inference attack implementations  
+requirements.txt          # Dependencies  
 ```
 
 ---
 
-## 🏃 Usage
+## 🚀 Usage
 
-### 🔧 Train Shadow Models
+### 1️⃣ Train Shadow Models
 
 Example (MLP on Location):
 
@@ -51,95 +52,102 @@ python main.py --dataset_name location --arch mlp --train_shadow
 
 ---
 
-### 🔧 Train Target + Run apcMIA Attack
-
-Example (MLP on Location):
+### 2️⃣ Train Target Model + Run FiST Attack
 
 ```bash
-python main.py --dataset_name location --arch mlp --attack_name apcmia --train_model --attack
+python main.py --dataset_name location --arch mlp --attack_name fist --train_model --attack
 ```
 
-> This will first train the target model, save its overfitting gap, then run the apcMIA attack.
+This will:
+1. Train the target model  
+2. Save the overfitting gap  
+3. Run the FiST attack  
 
 ---
 
-### 🛡️ Attacking DP-Trained Models
+### 3️⃣ Attacking DP-Trained Models
 
 Train shadow model with DP-SGD:
 
 ```bash
-python main.py --dataset_name location  --arch mlp  --train_shadow  --use_DP  --noise 0.3  --norm 5  --delta 1e-5
+python main.py --dataset_name location --arch mlp --train_shadow --use_DP --noise 0.3 --norm 5 --delta 1e-5
 ```
 
-Train target model with DP-SGD **and** attack:
+Train target model with DP-SGD + attack:
 
 ```bash
-python main.py --dataset_name location --arch mlp --attack_name apcmia --train_model --attack
+python main.py --dataset_name location --arch mlp --attack_name fist --train_model --attack
 ```
-
-> `--norm` is the clipping bound; adjust DP parameters to meet your privacy budget.
 
 ---
 
-### 📊 Plotting ROC & Threshold Curves
+### 4️⃣ Plotting Results
 
 ```bash
 # ROC curves
-python main.py --plot --plot_results roc --dataset_name location --arch mlp --attack_name apcmia
+python main.py --plot --plot_results roc --dataset_name location --arch mlp --attack_name fist
 
 # Threshold curves
-python main.py --plot --plot_results th --dataset_name location --arch mlp --attack_name apcmia
+python main.py --plot --plot_results th --dataset_name location --arch mlp --attack_name fist
 ```
 
-Add `--apcmia_cluster` to reproduce the clustering visualizations from the paper.
+Add `--fist_cluster` for clustering visualizations from the paper.
 
 ---
 
 ## 📚 Supported Datasets
 
-- **Image datasets** (via `torchvision.datasets`):  
-  - **CIFAR-10**  
-  - **CIFAR-100**  
-  - **Fashion-MNIST (FMNIST)**  
-  - **STL-10**
+**Image datasets**:
+- CIFAR-10  
+- CIFAR-100  
+- Fashion-MNIST  
+- STL-10  
 
-- **Non-image datasets**:  
-  - **Location** (processed Foursquare check-ins; from Shukri et al., PrivacyTrustLab: https://github.com/privacytrustlab/datasets)  
-  - **Texas-100** (from the same PrivacyTrustLab repository)  
-  - **Adult** (UCI Census Income; downloaded from https://archive.ics.uci.edu/dataset/2/adult)  
-  - **Purchase-100** (also available via PrivacyTrustLab datasets)
+**Non-image datasets**:
+- Location (Foursquare check-ins)  
+- Texas-100  
+- Adult (UCI Census Income)  
+- Purchase-100  
 
-> ⚠️ **Note:** Only `adult/` and `location/` are included under `data/` for demonstration.  
-> For the other datasets, please download from the original sources (listed above) and place each into `data/{dataset_name}/` before running any commands.
+> Only `adult/` and `location/` are included for demonstration.  
+> For other datasets, download from original sources and place under `data/{dataset_name}/`.
 
 ---
 
-## 📈 Attack Architectures
+## 🏗 Supported Architectures
 
-Run attacks with:
-
-- `--arch cnn`  
-- `--arch mlp`  
-- `--arch vgg16`
-
-Use `--arch mlp` for non-image datasets (Location, Adult, Purchase, Texas).  
-Use `--arch cnn` or `--arch vgg16` for image datasets (CIFAR-10, CIFAR-100, FMNIST, STL-10).
+- `--arch mlp` → Non-image datasets  
+- `--arch cnn` or `--arch vgg16` → Image datasets  
 
 Example:
 
 ```bash
-python main.py --dataset_name adult --arch mlp --attack_name apcmia --train_model --attack
+python main.py --dataset_name adult --arch mlp --attack_name fist --train_model --attack
 ```
 
 ---
 
-## 🧪 Evaluation Outputs
+## 📈 Outputs
 
-By default, running `--attack` or `--plot` will save:
+When running `--attack` or `--plot`, the following are saved:
 
-- ROC curve plots (PDF) in `roc_curves/`  
-- TPR/FPR CSVs alongside the PDF  
-- Learned threshold curves in `threshold_plots/`  
-- Excel summaries (`.xlsx`) in `roc_curves/` when invoked  
+- ROC curve plots (`roc_curves/`)  
+- TPR/FPR CSVs  
+- Learned threshold plots (`threshold_plots/`)  
+- Excel summaries (`roc_curves/*.xlsx`)  
+- Prediction vectors and logs (`results/`)  
 
-Refer to the `results/` folder for additional logs and attack prediction vectors.
+---
+
+## 📄 Citation
+
+If you use FiST in your research, please cite:
+
+```bibtex
+@article{FiST2025,
+  title     = {Fitting In to Stand Out: Contrastive Membership Inference Attacks via Learned Adversarial Perturbations},
+  author    = {Your Name and Coauthors},
+  journal   = {Under Review},
+  year      = {2025}
+}
+```
