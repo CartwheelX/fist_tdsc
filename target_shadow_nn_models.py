@@ -266,8 +266,20 @@ class PerturbationModel(nn.Module):
             nn.Sigmoid()               # Sigmoid ensures perturbation values are bounded (0, 1)
         )
     
-    def forward(self, PV_batch, target_label_batch):
-         return self.model(PV_batch)
+    # def forward(self, PV_batch, member):
+    #      return self.model(PV_batch, member)
+    
+    def forward(self, PV_batch):
+        """
+        PV_batch: tensor (B, class_num)
+        member_flag: tensor (B,) or (B,1) with values in {0,1}
+        """
+        # # ensure member_flag is (B,1)
+        # if member_flag.dim() == 1:
+        #     member_flag = member_flag.unsqueeze(1)  # → (B,1)
+        # # concatenate along feature dim
+        x = torch.cat([PV_batch], dim=1)  # → (B, class_num+1)
+        return self.model(x)
        
  
 
@@ -496,9 +508,48 @@ class CombinedShadowAttack(nn.Module):
         if self.attack_name == "apcmia":
             return self.pertubed_attack(output, prediction)
         
-           
+  
+# 1) Shrink & regularize your MLP
+class FinalAttackClassifier(nn.Module):
+    def __init__(self, num_classes, input_dim=12):
+        super().__init__()
+        input_dim = 12+1 + 2*num_classes
+        
+        self.bn1 = nn.BatchNorm1d(input_dim)
+        self.fc1 = nn.Linear(input_dim, 64)
+        self.fc2 = nn.Linear(64, 32)
+        self.fc3 = nn.Linear(32, 16)
+        self.fc4 = nn.Linear(16, 8)
+        self.fc5 = nn.Linear(8, 1)
 
+    def forward(self, x):
+        x = self.bn1(x)
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        x = F.relu(self.fc3(x))
+        x = F.relu(self.fc4(x))
+        return torch.sigmoid(self.fc5(x))
 
+# 2) Simple gate model
+class GateNet(nn.Module):
+    def __init__(self, num_classes, input_dim=12):
+        super().__init__()
+        input_dim = 12
+        
+        # self.bn1 = nn.BatchNorm1d(input_dim)
+        self.fc1 = nn.Linear(input_dim, 32)
+        # self.fc2 = nn.Linear(64, 32)
+        self.fc3 = nn.Linear(32, 16)
+        self.fc4 = nn.Linear(16, 8)
+        self.fc5 = nn.Linear(8, 1)
+
+    def forward(self, x):
+        # x = self.bn1(x)
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc3(x))
+        x = F.relu(self.fc4(x))
+        return torch.sigmoid(self.fc5(x))
+ 
 class CNN(nn.Module):
     def __init__(self, input_channel=3, num_classes=10):
         super(CNN, self).__init__()
