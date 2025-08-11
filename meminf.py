@@ -818,7 +818,7 @@ class attack_for_blackbox_com_NEW():
                 # targets can remain on CPU or be moved if needed
                 membership_flag = (members == 0).float().unsqueeze(1)  # (B,1)
 
-                if self.attack_name == "apcmia":
+                if self.attack_name == "fist":
                     # -- Your code for perturbation using cosine similarity, entropy etc. --
                     # This block remains as before.
                     member_mask = (members == 1)
@@ -883,7 +883,7 @@ class attack_for_blackbox_com_NEW():
                  
                 else:
                     results = self.attack_model(output, prediction, targets)
-                    contrast_loss = 0  # no contrastive loss for non-apcmia attacks
+                    contrast_loss = 0  # no contrastive loss for fist attacks
 
                 # # 3) compute entropies before & after
                 # # H_before = self.compute_entropy(output)               # (B,)
@@ -955,7 +955,7 @@ class attack_for_blackbox_com_NEW():
         ent_thre = torch.sigmoid(self.Entropy_quantile_threshold)
         cos_thre = torch.sigmoid(self.cosine_threshold)
 
-        if self.attack_name == "apcmia":
+        if self.attack_name == "fist":
             print(f"CosineT: {cos_thre:.4f}, Quantile Threshold: {ent_thre:.4f}")
      
         return cos_thre, ent_thre
@@ -987,7 +987,7 @@ class attack_for_blackbox_com_NEW():
                     aux_signal = self._get_aux_signal(raw_flag.to(self.device))
 
                     # Apply perturbation (hidden selective logic) or skip
-                    if self.attack_name == "apcmia":
+                    if self.attack_name == "fist":
                         perturbed = self.perturb_pvs(output, aux_signal)
                     else:
                         perturbed = output
@@ -1435,7 +1435,7 @@ class attack_for_blackbox_com_NEW():
 
         print(f"Saved entropy distribution plot to {output_path}")
     
-    def saved_model_apcmia(self, atk_model, prt_model, consin_thr, entrp_thr):
+    def saved_model_fist(self, atk_model, prt_model, consin_thr, entrp_thr):
         
        
         self.attack_model = atk_model
@@ -1474,7 +1474,7 @@ class attack_for_blackbox_com_NEW():
                     prediction = prediction.to(self.device)
                     members = members.to(self.device)
                     # targets can remain on CPU or be moved if needed.
-                    if self.attack_name == "apcmia": #new
+                    if self.attack_name == "fist": #new
 
                         # Create masks for members and non-members.
                         member_mask = (members == 1)
@@ -2097,8 +2097,8 @@ def save_best_checkpoint(val_loss, attack_model, perturb_model, cosine_threshold
     torch.save(checkpoint, checkpoint_path)
     print(f"Checkpoint saved to {checkpoint_path}")
 
-# attack_mode0_com(PATH + "_target.pth", PATH + "_shadow.pth",  PATH, device, attack_trainloader, attack_testloader, target_model, shadow_model, attack_model, perturb_model, num_classes, mode, dataset_name, attack_name, entropy_dis_dr, apcmia_cluster, arch, acc_gap)
-def attack_mode0_com(TARGET_PATH, SHADOW_PATH, ATTACK_PATH, device, attack_trainloader, attack_testloader, target_model, shadow_model, attack_model, finalAttackModel, perturb_model, num_classes, mode, dataset_name, attack_name, entropy_dis_dr, apcmia_cluster, arch, acc_gap):
+# attack_mode0_com(PATH + "_target.pth", PATH + "_shadow.pth",  PATH, device, attack_trainloader, attack_testloader, target_model, shadow_model, attack_model, perturb_model, num_classes, mode, dataset_name, attack_name, entropy_dis_dr, fist_cluster, arch, acc_gap)
+def attack_mode0_com(TARGET_PATH, SHADOW_PATH, ATTACK_PATH, device, attack_trainloader, attack_testloader, target_model, shadow_model, attack_model, finalAttackModel, perturb_model, num_classes, mode, dataset_name, attack_name, entropy_dis_dr, fist_cluster, arch, acc_gap):
     MODELS_PATH = ATTACK_PATH + "_meminf_"+attack_name+"_.pth"
     Perturb_MODELS_PATH = ATTACK_PATH + "_perturb_model.pth"
 
@@ -2220,10 +2220,10 @@ def attack_mode0_com(TARGET_PATH, SHADOW_PATH, ATTACK_PATH, device, attack_train
         print(f'models and thresholds are savedQ')
         
         
-        if attack_name == "apcmia":
-            print(f'computing ROC for apcmia')
+        if attack_name == "fist":
+            print(f'computing ROC for fist')
 
-            attack.saved_model_apcmia(attack.attack_model, attack.perturb_model,best_cosine_threshold,best_entropy_threshold)
+            attack.saved_model_fist(attack.attack_model, attack.perturb_model,best_cosine_threshold,best_entropy_threshold)
             
             if(dataset_name != "cifar10" and dataset_name != "cifar100" and dataset_name != "stl10" and dataset_name != "purchase" and dataset_name != "texas" and dataset_name != "adult" and dataset_name != "location"):
                 fpr, tpr, thresholds, roc_auc = attack.compute_roc_curve(attack.attack_model, attack.perturb_model,best_cosine_threshold,best_entropy_threshold)
@@ -2244,7 +2244,7 @@ def attack_mode0_com(TARGET_PATH, SHADOW_PATH, ATTACK_PATH, device, attack_train
         
   
     
-    if attack_name == "apcmia" and apcmia_cluster:
+    if attack_name == "fist" and fist_cluster:
 
           # 1. Create the root directory "cluster_results" if it doesn't exist.
         cluster_root = f"cluster_results/{arch}/"
