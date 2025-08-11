@@ -483,11 +483,11 @@ class CombinedShadowAttack(nn.Module):
 
     def get_embeddings(self, output, prediction, label):
         """
-        For the apcmia attack, returns feature embeddings for contrastive loss computation.
+        For the fist attack, returns feature embeddings for contrastive loss computation.
         Here, we first compute the concatenated features (Prediction_Component output concatenated with output),
         then run them through all but the final layer of the pertubed_attack_Component.
         """
-        if self.attack_name == "apcmia":
+        if self.attack_name == "fist":
             Prediction_Component_result = self.Prediction_Component(prediction)
             features = torch.cat((Prediction_Component_result, output), 1)
             # Get a list of layers from the sequential model:
@@ -497,7 +497,7 @@ class CombinedShadowAttack(nn.Module):
                 features = layer(features)
             return features  # This is the embedding representation
         else:
-            raise NotImplementedError("get_embeddings is implemented only for apcmia attack.")
+            raise NotImplementedError("get_embeddings is implemented only for fist attack.")
             
     def forward(self, output, prediction, label):
         
@@ -505,7 +505,7 @@ class CombinedShadowAttack(nn.Module):
         self.hidden2 = self.init_hidden2()
         self.hidden3 = self.init_hidden3()
        
-        if self.attack_name == "apcmia":
+        if self.attack_name == "fist":
             return self.pertubed_attack(output, prediction)
         
   
